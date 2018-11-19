@@ -3,6 +3,10 @@ import logging
 
 from base_balancer import BaseBalancer
 
+from ... import ROOT_LOGGER_NAME, ROOT_LOGGER_LEVEL
+logger = logging.getLogger('{}.{}'.format(ROOT_LOGGER_NAME, __name__))
+logger.setLevel(ROOT_LOGGER_LEVEL)
+
 
 class OHCBalancer(BaseBalancer):
     """
@@ -52,7 +56,7 @@ class OHCBalancer(BaseBalancer):
 
     def pre_next(self):
         if len(self._visited) % 100 == 0:
-            logging.getLogger().info("visited set length - {}".format(len(self._visited)))
+            logger.info("visited set length - {}".format(len(self._visited)))
         if len(self._visited) == self.data_length:
             self.reset()
             if self._raise_on_end:
@@ -87,11 +91,4 @@ class OHCBalancer(BaseBalancer):
         ret_val = self._per_class_index[self.current_class][self.current_in_class_pointer]
         self._visited.add(ret_val)
         return ret_val
-
-    def next(self):
-        self.pre_next()
-        ret_idx = self.current_id
-        self.post_next()
-        return self._perm[ret_idx]
-
 

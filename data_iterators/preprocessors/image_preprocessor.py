@@ -1,9 +1,16 @@
 import cv2
+import logging
+
 import numpy as np
 import os
 
-from base_preprocessor import BasePreprocessor
-from data_iterators import TRIAL_DATA_DIR
+from .base_preprocessor import BasePreprocessor, ArrayReader
+from ...data_iterators import TRIAL_DATA_DIR
+from ...image_transformers.resizing import loop_video_size_casting, back_and_fourth_video_size_casting, make_random_beginning_video_size_casting
+
+from ... import ROOT_LOGGER_NAME, ROOT_LOGGER_LEVEL
+logger = logging.getLogger('{}.{}'.format(ROOT_LOGGER_NAME, __name__))
+logger.setLevel(ROOT_LOGGER_LEVEL)
 
 
 class RGBImageFromFile(BasePreprocessor):
@@ -36,21 +43,25 @@ class RGBImageFromFile(BasePreprocessor):
 
 class RGBImagesFromList(BasePreprocessor):
     """
-    Provides a transformed RGB images in CTHW layout from list of files
+    Provides a transformed RGB images in CTHW, TCHW layout from list of files
     """
     interpolation_func = {
         'as_is': lambda num_frames_param, num_frames: np.linspace(0, num_frames, num_frames,
                                                                   endpoint=False).astype(int),
         'interpolate': lambda num_frames_param, num_frames: np.linspace(0, num_frames, num_frames_param,
                                                                         endpoint=False).astype(int),
+        'loop': loop_video_size_casting,
+        'back_and_forth': back_and_fourth_video_size_casting,
+        'random_beginning': make_random_beginning_video_size_casting(step=2),
     }
 
     trial_data = [os.path.join(TRIAL_DATA_DIR, 'trial_img.jpg')]
 
-    def __init__(self, num_frames, mode='interpolate', seq_transformer=None, norm=True, *args, **kwargs):
+    def __init__(self, num_frames, mode='interpolate', seq_transformer=None, norm=True, layout='CTHW', *args, **kwargs):
         self._num_frames = num_frames
         self._interpolation = mode
         self._norm = norm
+        self._layout = layout
 
         super(RGBImagesFromList, self).__init__(*args, **kwargs)
         self._transform = seq_transformer or (lambda x: x)
@@ -72,11 +83,22 @@ class RGBImagesFromList(BasePreprocessor):
         out_img_arr = self._transform(inp_img_arr)
         time_slice = self.interpolation_func[self._interpolation](self._num_frames, len(out_img_arr))
 
-        img_arr = np.array(out_img_arr)
+        img_arr = np.array(out_img_arr)[time_slice, :]
+
         if self._norm:
-            return (img_arr[time_slice, :].transpose(3, 0, 1, 2) - 128) / float(128)
+            if img_arr.dtype == np.uint8:
+                img_arr = img_arr.astype(int)
+                img_arr = (img_arr - 128) / float(128)
+            else:
+                logger.debug('refusing to normalize float array')
+
+        if self._layout == 'CTHW':
+            img_arr = img_arr.transpose(3, 0, 1, 2)
         else:
-            return img_arr[time_slice, :].transpose(3, 0, 1, 2)
+            img_arr = img_arr.transpose(0, 3, 1, 2)
+
+        logger.debug('processed video stats: min={}, max={}'.format(img_arr.min(), img_arr.max()))
+        return img_arr
 
     @property
     def provide_data(self):
@@ -84,17 +106,23 @@ class RGBImagesFromList(BasePreprocessor):
 
 
 class RGBImagesFromCallable(RGBImagesFromList):
-    def __init__(self, func, num_frames, mode='interpolate', seq_transformer=None, norm=True, *args, **kwargs):
+    def __init__(self, func, num_frames, mode='interpolate', seq_transformer=None, norm=True,
+                 layout='CTHW', *args, **kwargs):
         """
         Is buggy when inferring shape
         """
         self._getter = func
-        super(RGBImagesFromCallable, self).__init__(num_frames, mode, seq_transformer, norm, *args, **kwargs)
+        super(RGBImagesFromCallable, self).__init__(num_frames, mode, seq_transformer, norm, layout, *args, **kwargs)
 
     def get_image_array(self, data):
         return self._getter(data)
 
-    @property
-    def provide_data(self):
-        return self._name, self._shape
 
+class RGBImagesFromData(RGBImagesFromList):
+    def __init__(self, format_string,  *args, **kwargs):
+        super(RGBImagesFromData, self).__init__(*args, **kwargs)
+        self._format_string = format_string
+
+    def get_image_array(self, data):
+        arr = np.load(self._format_string.format(data))
+        return arr

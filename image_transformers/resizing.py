@@ -1,5 +1,10 @@
 import numpy as np
 import cv2
+import logging
+
+from .. import ROOT_LOGGER_NAME, ROOT_LOGGER_LEVEL
+logger = logging.getLogger('{}.{}'.format(ROOT_LOGGER_NAME, __name__))
+logger.setLevel(ROOT_LOGGER_LEVEL)
 
 
 def resize_frames(video_arr, target_size, keep_aspect_ratio=False):
@@ -8,7 +13,7 @@ def resize_frames(video_arr, target_size, keep_aspect_ratio=False):
     for im in video_arr:
         if keep_aspect_ratio:
             im_tmp = resize_image_keep_aspect(im, target_size=target_size)
-            ret_list.append(cv2.resize(im_tmp, target_size))
+            ret_list.append(im_tmp)
         else:
             ret_list.append(cv2.resize(im, target_size))
     return np.array(ret_list)
@@ -29,6 +34,7 @@ def resize_image_keep_aspect(img, target_size=(500, 500)):
     new_size = tuple([int(x * min_ratio) for x in old_size])
 
     # new_size should be in (width, height) format
+    # TODO: different interpolations for different cases
     img = cv2.resize(img, (new_size[1], new_size[0]))
 
     delta_w = target_size[1] - new_size[1]
@@ -38,3 +44,37 @@ def resize_image_keep_aspect(img, target_size=(500, 500)):
 
     new_im = cv2.copyMakeBorder(img, top, bottom, left, right, cv2.BORDER_CONSTANT, value=(0, 0, 0))
     return new_im
+
+
+def loop_video_size_casting(num_frames_param, num_frames):
+    base_range = np.arange(0, num_frames)
+    num_ranges_whole = num_frames_param / num_frames
+    linspace_res = num_frames_param % num_frames
+
+    ret_linspace = np.concatenate(num_ranges_whole * [base_range] + base_range[:linspace_res])
+    return ret_linspace
+
+
+def back_and_fourth_video_size_casting(num_frames_param, num_frames):
+    base_linspace = np.arange(0, num_frames)
+    num_range_whole = num_frames_param / num_frames
+    range_res = num_frames_param % num_frames
+
+    list_to_cat = []
+    for cat_counter in range(num_range_whole):
+        direction = 1 if cat_counter % 2 == 0 else -1
+        list_to_cat.append(base_linspace[::direction])
+
+    direction = 1 if num_range_whole % 2 == 0 else -1
+    list_to_cat.append(base_linspace[::direction][:range_res])
+
+    return np.concatenate(list_to_cat)
+
+def make_random_beginning_video_size_casting(step=2):
+    def random_beginning_video_size_casting(num_frames_param, num_frames):    
+        if num_frames <= step * num_frames_param: 
+            return np.linspace(0, num_frames, num_frames_param, endpoint=False).astype(int)
+        else:
+            beginning = np.random.randint(0, num_frames - step * num_frames_param)
+            return np.arange(beginning, beginning + step * num_frames_param, step, dtype=int)
+    return random_beginning_video_size_casting

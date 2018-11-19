@@ -1,4 +1,9 @@
 import numpy as np
+import logging
+
+from ... import ROOT_LOGGER_NAME, ROOT_LOGGER_LEVEL
+logger = logging.getLogger('{}.{}'.format(ROOT_LOGGER_NAME, __name__))
+logger.setLevel(ROOT_LOGGER_LEVEL)
 
 
 class BaseBalancer(object):
@@ -25,6 +30,8 @@ class BaseBalancer(object):
         self._visited = set()
 
     def pre_next(self):
+        if len(self._visited) % 100 == 0:
+            logger.info("visited set length - {}".format(len(self._visited)))
         if len(self._visited) == self.data_length:
             if self._raise_on_end:
                 raise StopIteration
@@ -47,3 +54,10 @@ class BaseBalancer(object):
 
     def reset(self):
         self._reset()
+
+    def next(self):
+        self.pre_next()
+        ret_idx = self.current_id
+        self.post_next()
+        return self._perm[ret_idx]
+
