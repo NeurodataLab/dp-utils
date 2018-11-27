@@ -4,9 +4,10 @@ import logging
 import numpy as np
 import os
 
-from .base_preprocessor import BasePreprocessor, ArrayReader
+from .base_preprocessor import BasePreprocessor
 from ...data_iterators import TRIAL_DATA_DIR
-from ...image_transformers.resizing import loop_video_size_casting, back_and_fourth_video_size_casting, make_random_beginning_video_size_casting
+from ...image_transformers.resizing import loop_video_size_casting, back_and_fourth_video_size_casting, \
+    make_random_beginning_video_size_casting
 
 from ... import ROOT_LOGGER_NAME, ROOT_LOGGER_LEVEL
 logger = logging.getLogger('{}.{}'.format(ROOT_LOGGER_NAME, __name__))

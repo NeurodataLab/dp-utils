@@ -5,12 +5,12 @@ import numpy as np
 import pandas as pd
 import cv2
 
-from ..base_iterator import BaseIterator
-from ..balancers.ohc_balancer import OHCBalancer
+from kungfutils.data_iterators.iterators.base_iterator import BaseIterator
+from kungfutils.data_iterators.balancers.ohc_balancer import OHCBalancer
 
-from ..preprocessors.image_preprocessor import RGBImagesFromCallable
-from ..preprocessors.base_preprocessor import IdentityPreprocessor
-from ...image_transformers.resizing import resize_image_keep_aspect
+from kungfutils.data_iterators.preprocessors.image_preprocessor import RGBImagesFromCallable
+from kungfutils.data_iterators.preprocessors.base_preprocessor import IdentityPreprocessor
+from kungfutils.image_transformers.resizing import resize_image_keep_aspect
 
 images_format_string = '/home/mininlab/DATA/EM/images/{}/images/'
 no_faces_format_string = '/home/mininlab/DATA/EM/images/{}/images_no_faces/'
