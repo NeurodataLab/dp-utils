@@ -60,4 +60,3 @@ class BaseBalancer(object):
         ret_idx = self.current_id
         self.post_next()
         return self._perm[ret_idx]
-

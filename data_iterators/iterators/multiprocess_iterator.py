@@ -1,21 +1,66 @@
+import multiprocessing as mp
+from queue import Full, Empty
 import mxnet as mx
+
 import logging
+from multiprocessing_logging import install_mp_handler
 
 from kungfutils.data_iterators.iterators.base_iterator import BaseIterator
 from ... import ROOT_LOGGER_NAME, ROOT_LOGGER_LEVEL
 logger = logging.getLogger('{}.{}'.format(ROOT_LOGGER_NAME, __name__))
 logger.setLevel(ROOT_LOGGER_LEVEL)
+install_mp_handler(logger=logger)
 
 
 class MultiProcessIterator(BaseIterator):
-    def __init__(self, num_processes, *args, **kwargs):
+    def __init__(self, num_processes, max_tasks=10, *args, **kwargs):
         super(MultiProcessIterator, self).__init__(*args, **kwargs)
         self._num_processes = num_processes
+        self._max_tasks = max(max_tasks, self._batch_size)
 
+        self._input_storage = mp.Queue(self._max_tasks)
+        self._output_storage = mp.Queue(-1)
 
-    @staticmethod
-    def process_instance(processorinstance):
-        pass
+        worker_func = self._make_worker_func()
+        self._workers = []
+        for i in range(num_processes):
+            proc = mp.Process(target=worker_func,  args=(self._input_storage, self._output_storage))
+            proc.daemon = True
+            proc.start()
+            self._workers.append(proc)
+        self._continue = self.next_tasks()
+
+    def _make_worker_func(self):
+        data_processors = [self._data_preprocessors[key] for key in self._data_keys]
+        label_processors = [self._label_preprocessors[key] for key in self._label_keys]
+
+        def task_func(task_queue, result_queue):
+            while True:
+                idx, data, labels = task_queue.get()  # waiting for available task
+                data_proc = [proc.process(d) for d, proc in zip(data, data_processors)]
+                label_proc = [proc.process(l) for l, proc in zip(labels, label_processors)]
+
+                result = idx, data_proc, label_proc
+                result_queue.put(result)
+
+        return task_func
+
+    def next_tasks(self, num_tasks=None):
+        task_added = 0
+        num_tasks = num_tasks or self._max_tasks
+        while task_added < num_tasks:  # iterate until full or stop
+            try:
+                idx = self._balancer.next()
+                data = [self._data[key][idx] for key in self._data_keys]
+                labels = [self._label[key][idx] for key in self._label_keys]
+
+                self._input_storage.put_nowait((idx, data, labels))
+                task_added += 1
+            except Full:
+                return True
+            except StopIteration:
+                return False
+        return True
 
     def next(self):
         if self._num_batches is not None and self._num_batches == self._batch_counter:
@@ -23,27 +68,27 @@ class MultiProcessIterator(BaseIterator):
 
         data_packs = [[] for _ in self._data_keys]
         label_packs = [[] for _ in self._label_keys]
-
         indices_to_ret = []
+
         sample_num = 0
+
         while sample_num < self._batch_size:
-            cur_idx = self._balancer.next()
-            instance = None
             try:
-                for num, key in enumerate(self._data_keys):
-                    instance = self._data[key][cur_idx]
-                    to_app = self._data_preprocessors[key].process(self._data[key][cur_idx])
-                    data_packs[num].append(to_app)
-
-                for num, key in enumerate(self._label_keys):
-                    instance = self._label[key][cur_idx]
-                    to_app = self._label_preprocessors[key].process(self._label[key][cur_idx])
-                    label_packs[num].append(to_app)
-
+                idx, data, labels = self._output_storage.get(True, 1)
+                # idx - sample index, data - (num_data, ...), labels - (num_labels, ...)
+                # if no exception here
+                indices_to_ret.append(idx)
+                for num_data, d in enumerate(data):
+                    data_packs[num_data].append(d)
+                for num_label, l in enumerate(labels):
+                    label_packs[num_label].append(l)
                 sample_num += 1
-                indices_to_ret.append(cur_idx)
-            except (IndexError, IOError) as _:
-                logger.info('probably no data for {}, {}'.format(cur_idx, instance))
+            except Empty:
+                break
+
+        self._continue = self.next_tasks() if self._continue else self._continue
+        if not self._continue and len(indices_to_ret) == 0:
+            raise StopIteration
 
         data_batched = [mx.nd.array(data_pack) for data_pack in data_packs]
         labels_batched = [mx.nd.array(label_pack) for label_pack in label_packs]
@@ -53,3 +98,5 @@ class MultiProcessIterator(BaseIterator):
             return mx.io.DataBatch(data=data_batched, label=labels_batched, pad=0)
         else:
             return mx.io.DataBatch(data=data_batched, label=labels_batched, pad=0), indices_to_ret
+
+

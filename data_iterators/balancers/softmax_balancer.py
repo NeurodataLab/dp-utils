@@ -1,7 +1,7 @@
 import numpy as np
 import logging
 
-from ohc_balancer import OHCBalancer
+from .ohc_balancer import OHCBalancer
 
 from ... import ROOT_LOGGER_NAME, ROOT_LOGGER_LEVEL
 logger = logging.getLogger('{}.{}'.format(ROOT_LOGGER_NAME, __name__))

@@ -1,7 +1,7 @@
 import numpy as np
 import logging
 
-from base_balancer import BaseBalancer
+from .base_balancer import BaseBalancer
 
 from ... import ROOT_LOGGER_NAME, ROOT_LOGGER_LEVEL
 logger = logging.getLogger('{}.{}'.format(ROOT_LOGGER_NAME, __name__))
