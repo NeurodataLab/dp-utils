@@ -29,7 +29,7 @@ class RGBImageFromFile(BasePreprocessor):
         self._norm = norm
 
     def process(self, data):
-        rgb = cv2.cvtColor(cv2.imread(data), cv2.COLOR_BGR2RGB)
+        rgb = self.get_image_array(data)
         img = self._transform(rgb)
 
         if self._norm:
@@ -37,9 +37,25 @@ class RGBImageFromFile(BasePreprocessor):
         else:
             return img.transpose(2, 0, 1)
 
+    def get_image_array(self, data):
+        rgb = cv2.cvtColor(cv2.imread(data), cv2.COLOR_BGR2RGB)
+        return rgb
+
     @property
     def provide_data(self):
         return self._name, self._shape
+
+
+class RGBImageFromCallable(RGBImageFromFile):
+    def __init__(self, func, image_transformer=None, norm=True, *args, **kwargs):
+        """
+        Is buggy when inferring shape
+        """
+        self._getter = func
+        super(RGBImageFromCallable, self).__init__(image_transformer=image_transformer, norm=norm, *args, **kwargs)
+
+    def get_image_array(self, data):
+        return self._getter(data)
 
 
 class RGBImagesFromList(BasePreprocessor):

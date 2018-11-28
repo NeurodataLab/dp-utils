@@ -48,9 +48,17 @@ class ZeroArrayReader(BasePreprocessor):
 
 
 class ArrayGetter(BasePreprocessor):
-    def __init__(self, getter=None, *args, **kwargs):
-        self._getter_func = getter
+    def __init__(self, func=None, *args, **kwargs):
+        self._getter_func = func
         super(ArrayGetter, self).__init__(*args, **kwargs)
 
     def process(self, data):
         return self._getter_func(data)
+
+
+class SlowZeroArrayReader(ZeroArrayReader):
+    def process(self, data):
+        count_to = 0
+        for i in range(10000):
+            count_to += 1
+        return super(SlowZeroArrayReader, self).process(data)

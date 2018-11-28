@@ -5,7 +5,7 @@ import mxnet as mx
 import logging
 from multiprocessing_logging import install_mp_handler
 
-from kungfutils.data_iterators.iterators.base_iterator import BaseIterator
+from .base_iterator import BaseIterator
 from ... import ROOT_LOGGER_NAME, ROOT_LOGGER_LEVEL
 logger = logging.getLogger('{}.{}'.format(ROOT_LOGGER_NAME, __name__))
 logger.setLevel(ROOT_LOGGER_LEVEL)
@@ -13,13 +13,14 @@ install_mp_handler(logger=logger)
 
 
 class MultiProcessIterator(BaseIterator):
-    def __init__(self, num_processes, max_tasks=10, *args, **kwargs):
+    def __init__(self, num_processes, max_tasks=10, max_results=1000, *args, **kwargs):
         super(MultiProcessIterator, self).__init__(*args, **kwargs)
         self._num_processes = num_processes
         self._max_tasks = max(max_tasks, self._batch_size)
+        self._max_results = max(max_results, self._batch_size)
 
         self._input_storage = mp.Queue(self._max_tasks)
-        self._output_storage = mp.Queue(-1)
+        self._output_storage = mp.Queue(self._max_results)
 
         worker_func = self._make_worker_func()
         self._workers = []
@@ -74,7 +75,7 @@ class MultiProcessIterator(BaseIterator):
 
         while sample_num < self._batch_size:
             try:
-                idx, data, labels = self._output_storage.get(True, 1)
+                idx, data, labels = self._output_storage.get(True, 10)
                 # idx - sample index, data - (num_data, ...), labels - (num_labels, ...)
                 # if no exception here
                 indices_to_ret.append(idx)

@@ -44,12 +44,25 @@ class BaseIterator(object):
         return provide_product[0], (self._batch_size,) + provide_product[1]
 
     @property
+    def batch_size(self):
+        return self._batch_size
+
+    @property
     def provide_data(self):
         return [self.add_batch_size(self._data_preprocessors[key].provide_data) for key in self._data_keys]
 
     @property
     def provide_label(self):
         return [self.add_batch_size(self._label_preprocessors[key].provide_data) for key in self._label_keys]
+
+    def _pack_to_backend(self, data_packs, label_packs, indices_pack):
+        data_batched = [mx.nd.array(data_pack) for data_pack in data_packs]
+        labels_batched = [mx.nd.array(label_pack) for label_pack in label_packs]
+
+        if not self._return_indices:
+            return mx.io.DataBatch(data=data_batched, label=labels_batched, pad=0)
+        else:
+            return mx.io.DataBatch(data=data_batched, label=labels_batched, pad=0), indices_pack
 
     def next(self):
         if self._num_batches is not None and self._num_batches == self._batch_counter:
@@ -64,26 +77,32 @@ class BaseIterator(object):
             cur_idx = self._balancer.next()
             instance = None
             try:
+                data_instances_to_app = []
                 for num, key in enumerate(self._data_keys):
                     instance = self._data[key][cur_idx]
                     to_app = self._data_preprocessors[key].process(self._data[key][cur_idx])
-                    data_packs[num].append(to_app)
+                    data_instances_to_app.append(to_app)
 
+                label_instances_to_app = []
                 for num, key in enumerate(self._label_keys):
                     instance = self._label[key][cur_idx]
                     to_app = self._label_preprocessors[key].process(self._label[key][cur_idx])
+                    label_instances_to_app.append(to_app)
+                # no append to batch before possible exception
+
+                for num, to_app in enumerate(data_instances_to_app):
+                    data_packs[num].append(to_app)
+
+                for num, to_app in enumerate(label_instances_to_app):
                     label_packs[num].append(to_app)
+
                 sample_num += 1
                 indices_to_ret.append(cur_idx)
             except (IndexError, IOError) as _:
                 logger.info('probably no data for {}, {}'.format(cur_idx, instance))
 
-        data_batched = [mx.nd.array(data_pack) for data_pack in data_packs]
-        labels_batched = [mx.nd.array(label_pack) for label_pack in label_packs]
-
         self._batch_counter += 1
-        if not self._return_indices:
-            return mx.io.DataBatch(data=data_batched, label=labels_batched, pad=0)
-        else:
-            return mx.io.DataBatch(data=data_batched, label=labels_batched, pad=0), indices_to_ret
 
+        return self._pack_to_backend(data_packs, label_packs, indices_to_ret)
+
+    __next__ = next
