@@ -32,14 +32,25 @@ class MultiProcessIterator(BaseIterator):
         self._continue = self.next_tasks()
 
     def _make_worker_func(self):
-        data_processors = [self._data_preprocessors[key] for key in self._data_keys]
-        label_processors = [self._label_preprocessors[key] for key in self._label_keys]
+        data_process_funcs = []
+        for key in self._data_keys:
+            process_func = getattr(
+                self._data_preprocessors[key], 'process', self._data_preprocessors[key].process_data
+            )
+            data_process_funcs.append(process_func)
+
+        label_process_funcs = []
+        for key in self._label_keys:
+            process_func = getattr(
+                self._label_preprocessors[key], 'process', self._label_preprocessors[key].process_label
+            )
+            label_process_funcs.append(process_func)
 
         def task_func(task_queue, result_queue):
             while True:
                 idx, data, labels = task_queue.get()  # waiting for available task
-                data_proc = [proc.process(d) for d, proc in zip(data, data_processors)]
-                label_proc = [proc.process(l) for l, proc in zip(labels, label_processors)]
+                data_proc = [proc_func(d) for d, proc_func in zip(data, data_process_funcs)]
+                label_proc = [proc_func(l) for l, proc_func in zip(labels, label_process_funcs)]
 
                 result = idx, data_proc, label_proc
                 result_queue.put(result)

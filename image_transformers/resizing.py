@@ -70,6 +70,7 @@ def back_and_fourth_video_size_casting(num_frames_param, num_frames):
 
     return np.concatenate(list_to_cat)
 
+
 def make_random_beginning_video_size_casting(step=2):
     def random_beginning_video_size_casting(num_frames_param, num_frames):    
         if num_frames <= step * num_frames_param: 

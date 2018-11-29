@@ -69,7 +69,13 @@ class BaseIterator(object):
 
     @property
     def provide_label(self):
-        return [self.add_batch_size(self._label_preprocessors[key].provide_data) for key in self._label_keys]
+        providers = []
+        for key in self._data_keys:
+            providers.append(getattr(
+                self._label_preprocessors[key], 'provide_label',
+                getattr(self._label_preprocessors[key], 'provide_data', None)
+            ))
+        return [self.add_batch_size(provider) for provider in providers]
 
     def _check_packers(self):
         for packer_pack in [self._data_packers, self._label_packers]:
@@ -111,14 +117,24 @@ class BaseIterator(object):
             try:
                 data_instances_to_app = []
                 for num, key in enumerate(self._data_keys):
+                    process_func = getattr(
+                        self._data_preprocessors[key], 'process',
+                        getattr(self._data_preprocessors[key], 'process_data', None)
+                    )
+
                     instance = self._data[key][cur_idx]
-                    to_app = self._data_preprocessors[key].process(self._data[key][cur_idx])
+                    to_app = process_func(self._data[key][cur_idx])
                     data_instances_to_app.append(to_app)
 
                 label_instances_to_app = []
                 for num, key in enumerate(self._label_keys):
+                    process_func = getattr(
+                        self._label_preprocessors[key], 'process',
+                        getattr(self._label_preprocessors[key], 'process_label', None)
+                    )
+
                     instance = self._label[key][cur_idx]
-                    to_app = self._label_preprocessors[key].process(self._label[key][cur_idx])
+                    to_app = process_func(self._label[key][cur_idx])
                     label_instances_to_app.append(to_app)
                 # no append to batch before possible exception
 

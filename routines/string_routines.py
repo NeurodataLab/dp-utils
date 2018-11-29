@@ -40,10 +40,3 @@ def is_substring_of_any(str, lst):
     for to_cmp in lst:
         ret = ret or (str in to_cmp)
     return ret
-
-
-if __name__ == '__main__':
-    print format_string_match(
-        format_string='/home/mininlab/DATA/EM/faces/{}/{}/f_imgs',
-        result='/home/mininlab/DATA/EM/faces/_10_Questions2/fragment_3/f_imgs'
-    )
