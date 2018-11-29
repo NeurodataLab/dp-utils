@@ -8,6 +8,9 @@ logger = logging.getLogger('{}.{}'.format(ROOT_LOGGER_NAME, __name__))
 logger.setLevel(ROOT_LOGGER_LEVEL)
 
 
+# TODO: this functionality was implemented in base iterator, this thing is staged for deletion
+
+
 class NumpyBaseIterator(BaseIterator):
 
     def _pack_to_backend(self, data_packs, label_packs, indices_pack):
@@ -18,5 +21,13 @@ class NumpyBaseIterator(BaseIterator):
             return data_batched, labels_batched
         else:
             return (data_batched, labels_batched), indices_pack
+
+
+class ListBaseIterator(BaseIterator):
+    def _pack_to_backend(self, data_packs, label_packs, indices_pack):
+        if not self._return_indices:
+            return data_packs, label_packs
+        else:
+            return (data_packs, label_packs), indices_pack
 
 # TODO: implement mp numpy version, mp version is not well tested yet

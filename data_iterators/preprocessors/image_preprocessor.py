@@ -19,23 +19,27 @@ class RGBImageFromFile(BasePreprocessor):
     Provides a transformed RGB image in CHW layout from file
     """
     trial_data = os.path.join(TRIAL_DATA_DIR, 'trial_img.jpg')
+    layouts_signatures = {'CHW': (2, 0, 1), 'HWC': (0, 1, 2), 'WHC': (0, 2, 1)}
 
-    def __init__(self, image_transformer=None, norm=True, *args, **kwargs):
+    def __init__(self, image_transformer=None, norm=True, layout='CHW', *args, **kwargs):
         super(RGBImageFromFile, self).__init__(*args, **kwargs)
         self._transform = image_transformer or (lambda x: x)
 
         self._shape = self._shape or self.process(self.trial_data).shape
         self._name = self._name or 'default'
         self._norm = norm
+        self._layout = layout
 
     def process(self, data):
         rgb = self.get_image_array(data)
         img = self._transform(rgb)
 
+        img = img.transpose(*self.layouts_signatures[self._layout])
+
         if self._norm:
-            return img.transpose(2, 0, 1) / float(255)
+            return img / float(255)
         else:
-            return img.transpose(2, 0, 1)
+            return img
 
     def get_image_array(self, data):
         rgb = cv2.cvtColor(cv2.imread(data), cv2.COLOR_BGR2RGB)
@@ -71,6 +75,8 @@ class RGBImagesFromList(BasePreprocessor):
         'back_and_forth': back_and_fourth_video_size_casting,
         'random_beginning': make_random_beginning_video_size_casting(step=2),
     }
+
+    layouts_signatures = {'CTHW': (3, 0, 1, 2), 'TCHW': (0, 3, 1, 2)}
 
     trial_data = [os.path.join(TRIAL_DATA_DIR, 'trial_img.jpg')]
 
@@ -109,10 +115,7 @@ class RGBImagesFromList(BasePreprocessor):
             else:
                 logger.debug('refusing to normalize float array')
 
-        if self._layout == 'CTHW':
-            img_arr = img_arr.transpose(3, 0, 1, 2)
-        else:
-            img_arr = img_arr.transpose(0, 3, 1, 2)
+        img_arr = img_arr.transpose(*self.layouts_signatures[self._layout])
 
         logger.debug('processed video stats: min={}, max={}'.format(img_arr.min(), img_arr.max()))
         return img_arr

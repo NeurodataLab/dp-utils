@@ -1,4 +1,5 @@
 import mxnet as mx
+import numpy as np
 import logging
 
 from ... import ROOT_LOGGER_NAME, ROOT_LOGGER_LEVEL
@@ -8,14 +9,21 @@ logger.setLevel(ROOT_LOGGER_LEVEL)
 
 class BaseIterator(object):
 
-    def __init__(self, balancer, data, data_preprocessors, label=None, return_indices=False,
-                 label_preprocessors=None, batch_size=32, num_batches=None):
+    packers = {
+        'mxnet': mx.nd.array, 'numpy': np.array, 'list': (lambda x: x)
+    }
+
+    def __init__(self, balancer, data, data_preprocessors, data_packers=None,
+                 label=None, label_preprocessors=None, label_packers=None,
+                 batch_size=32, num_batches=None, return_indices=False):
         """
         :param data: dict {data_name: iterable ...}
         :param label: dict {label_name: iterable ...}
         :param balancer: instance of balancer
         :param data_preprocessors: dict {data_name: preprocessor}
         :param label_preprocessors: dict {label_name: preprocessor}
+        :param data_packers: dict {data_name: 'mxnet' | 'numpy' | 'list'}
+        :param label_packers: dict {label_name: 'mxnet' | 'numpy' | 'list'}
         """
         self._return_indices = return_indices
 
@@ -34,6 +42,10 @@ class BaseIterator(object):
         self._data_keys = list(data.keys())
         self._label_keys = list(label.keys())
 
+        self._data_packers = data_packers or {k: 'mxnet' for k in self._data_keys}
+        self._label_packers = label_packers or {k: 'mxnet' for k in self._label_keys}
+        self._check_packers()
+
     def __iter__(self):
         return self
 
@@ -42,6 +54,10 @@ class BaseIterator(object):
 
     def add_batch_size(self, provide_product):
         return provide_product[0], (self._batch_size,) + provide_product[1]
+
+    @property
+    def return_indices(self):
+        return self._return_indices
 
     @property
     def batch_size(self):
@@ -55,14 +71,30 @@ class BaseIterator(object):
     def provide_label(self):
         return [self.add_batch_size(self._label_preprocessors[key].provide_data) for key in self._label_keys]
 
-    def _pack_to_backend(self, data_packs, label_packs, indices_pack):
-        data_batched = [mx.nd.array(data_pack) for data_pack in data_packs]
-        labels_batched = [mx.nd.array(label_pack) for label_pack in label_packs]
+    def _check_packers(self):
+        for packer_pack in [self._data_packers, self._label_packers]:
+            if 'mxnet' in packer_pack.values():
+                logger.warning('if mxnet packer is set for at least one kind of data, it must be set for every')
 
-        if not self._return_indices:
-            return mx.io.DataBatch(data=data_batched, label=labels_batched, pad=0)
+    def _pack_to_backend(self, data_packs, label_packs, indices_pack):
+        data_batched = [self.packers[self._data_packers[data_key]](data_packs[num])
+                        for num, data_key in enumerate(self._data_keys)]
+        labels_batched = [self.packers[self._label_packers[label_key]](label_packs[num])
+                          for num, label_key in enumerate(self._label_keys)]
+
+        use_mxnet = 'mxnet' in self._data_packers.values()
+
+        if use_mxnet:
+            logger.info('trying to pack data and labels to mxnet batch')
+            if not self._return_indices:
+                return mx.io.DataBatch(data=data_batched, label=labels_batched, pad=0)
+            else:
+                return mx.io.DataBatch(data=data_batched, label=labels_batched, pad=0), indices_pack
         else:
-            return mx.io.DataBatch(data=data_batched, label=labels_batched, pad=0), indices_pack
+            if not self._return_indices:
+                return data_batched, labels_batched
+            else:
+                return (data_batched, labels_batched), indices_pack
 
     def next(self):
         if self._num_batches is not None and self._num_batches == self._batch_counter:
