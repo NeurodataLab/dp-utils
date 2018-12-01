@@ -1,6 +1,6 @@
+import logging
 import mxnet as mx
 import numpy as np
-import logging
 from sklearn.metrics import accuracy_score, log_loss
 
 

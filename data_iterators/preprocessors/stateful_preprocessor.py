@@ -1,4 +1,9 @@
 class BaseStatefulPreprocessor(object):
+    """
+    Base preprocessor for data dependent label preprocessing,
+    process data is invoked first, you can save state during data processing, apply this state in process label
+
+    """
     def __init__(self, data_name=None, data_shape=None, label_name=None, label_shape=None, *args, **kwargs):
         self._data_name = data_name
         self._data_shape = data_shape
@@ -22,9 +27,6 @@ class BaseStatefulPreprocessor(object):
 
 
 class DetectionPreprocessor(BaseStatefulPreprocessor):
-    """
-    Preprocessor for data dependent label preprocessing, and sometimes later vice versa
-    """
     layouts_signatures = {'CHW': (2, 0, 1), 'HWC': (0, 1, 2), 'WHC': (0, 2, 1)}
 
     def __init__(self, image_getter, norm=True, layout='CHW', *args, **kwargs):

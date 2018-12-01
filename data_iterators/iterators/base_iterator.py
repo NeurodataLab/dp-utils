@@ -55,6 +55,12 @@ class BaseIterator(object):
     def add_batch_size(self, provide_product):
         return provide_product[0], (self._batch_size,) + provide_product[1]
 
+    def get_params(self):
+        return {'batch_size': self.batch_size, 'data': self.provide_data, 'label': self.provide_label,
+                'data_processors': {k: str(v) for k, v in self._data_preprocessors.items()},
+                'label_processors': {k: str(v) for k, v in self._label_preprocessors.items()}
+                }
+
     @property
     def return_indices(self):
         return self._return_indices
@@ -70,7 +76,7 @@ class BaseIterator(object):
     @property
     def provide_label(self):
         providers = []
-        for key in self._data_keys:
+        for key in self._label_keys:
             providers.append(getattr(
                 self._label_preprocessors[key], 'provide_label',
                 getattr(self._label_preprocessors[key], 'provide_data', None)
