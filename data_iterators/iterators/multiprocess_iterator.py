@@ -41,7 +41,7 @@ class MultiProcessIterator(BaseIterator):
                         key = key if isinstance(key, tuple) else (key,)
                         instance = {k: self._joint_storage[k][idx] for k in key}
                         result.update(processor.process(**instance))
-                    result_queue.put(result)
+                    result_queue.put((idx, result))
                 except (IndexError, IOError) as _:
                     logger.info('Probably no data for {}'.format(idx))
 
