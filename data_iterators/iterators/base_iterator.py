@@ -111,8 +111,8 @@ class BaseIterator(object):
     __next__ = next
 
     def _pack_to_backend(self, data_pack, indices_pack):
-        data_batched = {key: self.packers[self._packers[key]](data_pack[key]) for key in self._data_keys}
-        labels_batched = {key: self.packers[self._packers[key]](data_pack[key]) for key in self._label_keys}
+        data_batched = [self.packers[self._packers[key]](data_pack[key]) for key in self._data_keys]
+        labels_batched = [self.packers[self._packers[key]](data_pack[key]) for key in self._label_keys]
 
         use_mxnet = 'mxnet' in self._packers.values()
 
