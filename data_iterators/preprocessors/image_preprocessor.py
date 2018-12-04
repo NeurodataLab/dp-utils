@@ -6,7 +6,7 @@ import os
 
 from .base_preprocessor import BasePreprocessor
 from ...data_iterators import TRIAL_DATA_DIR
-from ...image_transformers.resizing import loop_video_size_casting, back_and_fourth_video_size_casting, \
+from ...transformers.resizing import loop_video_size_casting, back_and_fourth_video_size_casting, \
     make_random_beginning_video_size_casting
 
 from ... import ROOT_LOGGER_NAME, ROOT_LOGGER_LEVEL
@@ -30,7 +30,7 @@ class RGBImageFromFile(BasePreprocessor):
         self._norm = norm
         self._layout = layout
 
-    def process(self, data):
+    def process(self, data, *args, **kwargs):
         rgb = self.get_image_array(data)
         img = self._transform(rgb)
 
@@ -100,7 +100,7 @@ class RGBImagesFromList(BasePreprocessor):
 
         return img_arr
 
-    def process(self, data):
+    def process(self, data, *args, **kwargs):
         inp_img_arr = self.get_image_array(data)
 
         out_img_arr = self._transform(inp_img_arr)

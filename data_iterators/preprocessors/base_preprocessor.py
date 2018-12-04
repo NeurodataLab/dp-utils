@@ -13,11 +13,10 @@ class BasePreprocessor(object):
         self._shape = shape
         self._name = name
 
-    def process(self, data):
+    def process(self, data, *args, **kwargs):
         pass
 
-    @property
-    def provide_data(self):
+    def provide_data(self, *args, **kwargs):
         return self._name, self._shape
 
 
@@ -25,7 +24,7 @@ class IdentityPreprocessor(BasePreprocessor):
     def __init__(self, *args, **kwargs):
         super(IdentityPreprocessor, self).__init__(*args, **kwargs)
 
-    def process(self, data):
+    def process(self, data, *args, **kwargs):
         return np.atleast_1d(data)
 
 
@@ -34,7 +33,7 @@ class ArrayReader(BasePreprocessor):
         super(ArrayReader, self).__init__(name, shape, *args, **kwargs)
         self._format_string = format_string
 
-    def process(self, data):
+    def process(self, data, *args, **kwargs):
         return np.load(self._format_string.format(data))
 
 
@@ -43,7 +42,7 @@ class ZeroArrayReader(BasePreprocessor):
         super(ZeroArrayReader, self).__init__(name, shape, *args, **kwargs)
         self._dt = dtype
 
-    def process(self, data):
+    def process(self, data, *args, **kwargs):
         return np.zeros(self._shape, dtype=self._dt)
 
 
@@ -52,12 +51,12 @@ class ArrayGetter(BasePreprocessor):
         self._getter_func = func
         super(ArrayGetter, self).__init__(*args, **kwargs)
 
-    def process(self, data):
+    def process(self, data, *args, **kwargs):
         return self._getter_func(data)
 
 
 class SlowZeroArrayReader(ZeroArrayReader):
-    def process(self, data):
+    def process(self, data, *args, **kwargs):
         count_to = 0
         for i in range(10000):
             count_to += 1

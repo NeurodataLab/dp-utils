@@ -32,25 +32,14 @@ class MultiProcessIterator(BaseIterator):
         self._continue = self.next_tasks()
 
     def _make_worker_func(self):
-        data_process_funcs = []
-        for key in self._data_keys:
-            process_func = getattr(
-                self._data_preprocessors[key], 'process', self._data_preprocessors[key].process_data
-            )
-            data_process_funcs.append(process_func)
-
-        label_process_funcs = []
-        for key in self._label_keys:
-            process_func = getattr(
-                self._label_preprocessors[key], 'process', self._label_preprocessors[key].process_label
-            )
-            label_process_funcs.append(process_func)
+        data_process_funcs = [self._data_preprocessors[key].process for key in self._data_keys]
+        label_process_funcs = [self._label_preprocessors[key].process for key in self._label_keys]
 
         def task_func(task_queue, result_queue):
             while True:
                 idx, data, labels = task_queue.get()  # waiting for available task
-                data_proc = [proc_func(d) for d, proc_func in zip(data, data_process_funcs)]
-                label_proc = [proc_func(l) for l, proc_func in zip(labels, label_process_funcs)]
+                data_proc = [proc_func(d, name=dkey) for (dkey, d), proc_func in zip(data, data_process_funcs)]
+                label_proc = [proc_func(l, name=lkey) for (lkey, l), proc_func in zip(labels, label_process_funcs)]
 
                 result = idx, data_proc, label_proc
                 result_queue.put(result)
@@ -63,8 +52,8 @@ class MultiProcessIterator(BaseIterator):
         while task_added < num_tasks:  # iterate until full or stop
             try:
                 idx = self._balancer.next()
-                data = [self._data[key][idx] for key in self._data_keys]
-                labels = [self._label[key][idx] for key in self._label_keys]
+                data = [(key, self._data[key][idx]) for key in self._data_keys]
+                labels = [(key, self._label[key][idx]) for key in self._label_keys]
 
                 self._input_storage.put_nowait((idx, data, labels))
                 task_added += 1

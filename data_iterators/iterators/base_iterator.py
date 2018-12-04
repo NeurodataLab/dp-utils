@@ -71,17 +71,11 @@ class BaseIterator(object):
 
     @property
     def provide_data(self):
-        return [self.add_batch_size(self._data_preprocessors[key].provide_data) for key in self._data_keys]
+        return [self.add_batch_size(self._data_preprocessors[key].provide_data(key)) for key in self._data_keys]
 
     @property
     def provide_label(self):
-        providers = []
-        for key in self._label_keys:
-            providers.append(getattr(
-                self._label_preprocessors[key], 'provide_label',
-                getattr(self._label_preprocessors[key], 'provide_data', None)
-            ))
-        return [self.add_batch_size(provider) for provider in providers]
+        return [self.add_batch_size(self._label_preprocessors[key].provide_data(key)) for key in self._label_keys]
 
     def _check_packers(self):
         for packer_pack in [self._data_packers, self._label_packers]:
@@ -123,24 +117,18 @@ class BaseIterator(object):
             try:
                 data_instances_to_app = []
                 for num, key in enumerate(self._data_keys):
-                    process_func = getattr(
-                        self._data_preprocessors[key], 'process',
-                        getattr(self._data_preprocessors[key], 'process_data', None)
-                    )
+                    process_func = self._data_preprocessors[key].process
 
                     instance = self._data[key][cur_idx]
-                    to_app = process_func(self._data[key][cur_idx])
+                    to_app = process_func(instance, name=key)
                     data_instances_to_app.append(to_app)
 
                 label_instances_to_app = []
                 for num, key in enumerate(self._label_keys):
-                    process_func = getattr(
-                        self._label_preprocessors[key], 'process',
-                        getattr(self._label_preprocessors[key], 'process_label', None)
-                    )
+                    process_func = self._label_preprocessors[key].process
 
                     instance = self._label[key][cur_idx]
-                    to_app = process_func(self._label[key][cur_idx])
+                    to_app = process_func(instance, name=key)
                     label_instances_to_app.append(to_app)
                 # no append to batch before possible exception
 
