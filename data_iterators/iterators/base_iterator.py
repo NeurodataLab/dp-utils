@@ -34,9 +34,6 @@ class BaseIterator(object):
         self._joint_storage = merge_dicts(self._data, self._label)
 
         self._preprocessors = preprocessors
-        self._one_to_multiple_key_map = {
-            k_one: k_mul for k_one in self._joint_keys for k_mul in self._preprocessors.keys() if k_one in k_mul
-        }
 
         self._batch_size = batch_size
         self._num_batches = num_batches
@@ -130,5 +127,3 @@ class BaseIterator(object):
                 return data_batched, labels_batched
             else:
                 return (data_batched, labels_batched), indices_pack
-
-
