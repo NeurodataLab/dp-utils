@@ -7,6 +7,7 @@ from kungfutils.data_iterators.balancers.ohc_balancer import OHCBalancer
 
 from kungfutils.data_iterators.preprocessors.base_preprocessor import SlowZeroArrayReader
 from kungfutils.data_iterators.preprocessors.base_preprocessor import IdentityPreprocessor
+from kungfutils.routines.data_structure_routines import merge_dicts
 
 if __name__ == '__main__':
 
@@ -25,8 +26,7 @@ if __name__ == '__main__':
     iter_train = MultiProcessIterator(
         balancer=balancer, data={'data': labels_data},
         label={'label': labels_data},
-        data_preprocessors=data_proc,
-        label_preprocessors=label_proc,
+        preprocessors=merge_dicts(data_proc, label_proc),
         batch_size=32,
         num_processes=8,
         max_tasks=5000,

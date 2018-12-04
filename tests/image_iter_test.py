@@ -10,6 +10,7 @@ from kungfutils.data_iterators.balancers.ohc_balancer import OHCBalancer
 
 from kungfutils.data_iterators.preprocessors.image_preprocessor import RGBImagesFromCallable
 from kungfutils.data_iterators.preprocessors.base_preprocessor import IdentityPreprocessor
+from kungfutils.routines.data_structure_routines import merge_dicts
 from kungfutils.transformers.resizing import resize_image_keep_aspect
 
 images_format_string = '/home/mininlab/DATA/EM/images/{}/images/'
@@ -89,8 +90,7 @@ if __name__ == '__main__':
     iter_train = BaseIterator(
         balancer=balancer, data={'data': labels_data['path']},
         label={'label': labels_data[dummies_cols].values},
-        data_preprocessors=data_proc,
-        label_preprocessors=label_proc,
+        preprocessors=merge_dicts(data_proc, label_proc),
         batch_size=32
     )
 
