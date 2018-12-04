@@ -47,8 +47,7 @@ class RGBImageFromFile(BasePreprocessor):
         rgb = cv2.cvtColor(cv2.imread(data), cv2.COLOR_BGR2RGB)
         return rgb
 
-    @property
-    def provide_data(self):
+    def provide_data(self, *args, **kwargs):
         return self._name, self._shape
 
 
@@ -120,8 +119,7 @@ class RGBImagesFromList(BasePreprocessor):
             processed[key] = img_arr
         return processed
 
-    @property
-    def provide_data(self):
+    def provide_data(self, *args, **kwargs):
         return self._name, self._shape
 
 
