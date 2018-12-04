@@ -5,7 +5,7 @@ import mxnet as mx
 import logging
 from multiprocessing_logging import install_mp_handler
 
-from .base_iterator import BaseIterator
+from .base_rework import BaseIterator
 from ... import ROOT_LOGGER_NAME, ROOT_LOGGER_LEVEL
 logger = logging.getLogger('{}.{}'.format(ROOT_LOGGER_NAME, __name__))
 logger.setLevel(ROOT_LOGGER_LEVEL)
@@ -32,17 +32,14 @@ class MultiProcessIterator(BaseIterator):
         self._continue = self.next_tasks()
 
     def _make_worker_func(self):
-        data_process_funcs = [self._data_preprocessors[key].process for key in self._data_keys]
-        label_process_funcs = [self._label_preprocessors[key].process for key in self._label_keys]
-
-
         def task_func(task_queue, result_queue):
             while True:
-                idx, data, labels = task_queue.get()  # waiting for available task
-                data_proc = [proc_func(d, name=dkey) for (dkey, d), proc_func in zip(data, data_process_funcs)]
-                label_proc = [proc_func(l, name=lkey) for (lkey, l), proc_func in zip(labels, label_process_funcs)]
-
-                result = idx, data_proc, label_proc
+                result = {}
+                idx, data_pack = task_queue.get()  # waiting for available task
+                for key, processor in self._preprocessors.items():
+                    key = key if isinstance(key, tuple) else (key,)
+                    instance = {k: self._joint_storage[k][idx] for k in key}
+                    result.update(processor.process(**instance))
                 result_queue.put(result)
 
         return task_func
@@ -53,10 +50,9 @@ class MultiProcessIterator(BaseIterator):
         while task_added < num_tasks:  # iterate until full or stop
             try:
                 idx = self._balancer.next()
-                data = [(key, self._data[key][idx]) for key in self._data_keys]
-                labels = [(key, self._label[key][idx]) for key in self._label_keys]
+                data_pack = {key: self._joint_storage[key][idx] for key in self._joint_keys}
 
-                self._input_storage.put_nowait((idx, data, labels))
+                self._input_storage.put_nowait((idx, data_pack))
                 task_added += 1
             except Full:
                 return True

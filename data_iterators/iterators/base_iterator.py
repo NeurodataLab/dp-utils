@@ -22,8 +22,10 @@ class BaseIterator(object):
         :param balancer: instance of balancer
         :param data_preprocessors: dict {data_name: preprocessor}
         :param label_preprocessors: dict {label_name: preprocessor}
+        :param preprocessors: dict {(names | name: preprocessor)}
         :param data_packers: dict {data_name: 'mxnet' | 'numpy' | 'list'}
         :param label_packers: dict {label_name: 'mxnet' | 'numpy' | 'list'}
+        :param packers: dict {name: 'mxnet' | 'numpy' | 'list'}
         """
         self._return_indices = return_indices
 

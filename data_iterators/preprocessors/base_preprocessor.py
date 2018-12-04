@@ -13,7 +13,7 @@ class BasePreprocessor(object):
         self._shape = shape
         self._name = name
 
-    def process(self, data, *args, **kwargs):
+    def process(self, **kwargs):
         pass
 
     def provide_data(self, *args, **kwargs):
@@ -24,8 +24,8 @@ class IdentityPreprocessor(BasePreprocessor):
     def __init__(self, *args, **kwargs):
         super(IdentityPreprocessor, self).__init__(*args, **kwargs)
 
-    def process(self, data, *args, **kwargs):
-        return np.atleast_1d(data)
+    def process(self, *args, **kwargs):
+        return {key: np.atleast_1d(data) for key, data in kwargs.items()}
 
 
 class ArrayReader(BasePreprocessor):
@@ -33,8 +33,8 @@ class ArrayReader(BasePreprocessor):
         super(ArrayReader, self).__init__(name, shape, *args, **kwargs)
         self._format_string = format_string
 
-    def process(self, data, *args, **kwargs):
-        return np.load(self._format_string.format(data))
+    def process(self, **kwargs):
+        return {key: np.load(self._format_string.format(data)) for key, data in kwargs.items()}
 
 
 class ZeroArrayReader(BasePreprocessor):
@@ -42,8 +42,8 @@ class ZeroArrayReader(BasePreprocessor):
         super(ZeroArrayReader, self).__init__(name, shape, *args, **kwargs)
         self._dt = dtype
 
-    def process(self, data, *args, **kwargs):
-        return np.zeros(self._shape, dtype=self._dt)
+    def process(self, **kwargs):
+        return {key: np.zeros(self._shape, dtype=self._dt) for key, data in kwargs.items()}
 
 
 class ArrayGetter(BasePreprocessor):
@@ -51,13 +51,13 @@ class ArrayGetter(BasePreprocessor):
         self._getter_func = func
         super(ArrayGetter, self).__init__(*args, **kwargs)
 
-    def process(self, data, *args, **kwargs):
-        return self._getter_func(data)
+    def process(self, **kwargs):
+        return {key: self._getter_func(data) for key, data in kwargs.items()}
 
 
 class SlowZeroArrayReader(ZeroArrayReader):
-    def process(self, data, *args, **kwargs):
+    def process(self, **kwargs):
         count_to = 0
         for i in range(10000):
             count_to += 1
-        return super(SlowZeroArrayReader, self).process(data)
+        return super(SlowZeroArrayReader, self).process(**kwargs)

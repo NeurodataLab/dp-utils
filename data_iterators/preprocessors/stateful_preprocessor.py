@@ -1,19 +1,4 @@
-from kungfutils.data_iterators.preprocessors.image_preprocessor import RGBImageFromFile
 from .base_preprocessor import BasePreprocessor
-
-
-class FutureData(object):
-    def __init__(self, producer, data_type, queue_index=0):
-        """
-        :param producer: Parent preprocessor
-        :param data_type: 'data' | 'label'
-        """
-        self._producer = producer
-        self._type = data_type
-        self._queue_index = queue_index
-
-    def eval(self):
-        data_pack = self._producer.process_gather()
 
 
 class BaseStatefulPreprocessor(BasePreprocessor):
@@ -40,7 +25,7 @@ class BaseStatefulPreprocessor(BasePreprocessor):
     def provide_data(self, name, *args, **kwargs):
         return name, self._data_shapes[name]
 
-    def process(self, data, *args, **kwargs):
+    def process(self, **kwargs):
         # name is either named arg or second argument - name = kwargs.get('name', args[0])
         # encode dependencies here
         pass
@@ -71,5 +56,5 @@ class DetectionPreprocessor(BaseStatefulPreprocessor):
         img = self._getter(data)
         return img
 
-    def process(self, data, *args, **kwargs):
+    def process(self, **kwargs):
         pass

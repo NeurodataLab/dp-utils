@@ -21,25 +21,27 @@ class RGBImageFromFile(BasePreprocessor):
     trial_data = os.path.join(TRIAL_DATA_DIR, 'trial_img.jpg')
     layouts_signatures = {'CHW': (2, 0, 1), 'HWC': (0, 1, 2), 'WHC': (0, 2, 1)}
 
-    def __init__(self, image_transformer=None, norm=True, layout='CHW', *args, **kwargs):
+    def __init__(self, image_transformer=None, layout='CHW', norm_mean=(0, 0, 0), norm_std=(1, 1, 1), *args, **kwargs):
         super(RGBImageFromFile, self).__init__(*args, **kwargs)
         self._transform = image_transformer or (lambda x: x)
 
-        self._shape = self._shape or self.process(self.trial_data).shape
+        self._shape = self._shape
         self._name = self._name or 'default'
-        self._norm = norm
         self._layout = layout
 
-    def process(self, data, *args, **kwargs):
-        rgb = self.get_image_array(data)
-        img = self._transform(rgb)
+        self._norm_mean = np.array(norm_mean, dtype=float)
+        self._norm_std = np.array(norm_std, dtype=float)
 
-        img = img.transpose(*self.layouts_signatures[self._layout])
+    def process(self, **kwargs):
+        processed = {}
+        for key, data in kwargs.items():
+            rgb = self.get_image_array(data)
+            img = self._transform(rgb)
 
-        if self._norm:
-            return img / float(255)
-        else:
-            return img
+            img = (img - self._norm_mean) / self._norm_std
+            img = img.transpose(*self.layouts_signatures[self._layout])
+            processed[key] = img
+        return processed
 
     def get_image_array(self, data):
         rgb = cv2.cvtColor(cv2.imread(data), cv2.COLOR_BGR2RGB)
@@ -80,11 +82,14 @@ class RGBImagesFromList(BasePreprocessor):
 
     trial_data = [os.path.join(TRIAL_DATA_DIR, 'trial_img.jpg')]
 
-    def __init__(self, num_frames, mode='interpolate', seq_transformer=None, norm=True, layout='CTHW', *args, **kwargs):
+    def __init__(self, num_frames, mode='interpolate', seq_transformer=None, layout='CTHW',
+                 norm_mean=(0, 0, 0), norm_std=(1, 1, 1), *args, **kwargs):
         self._num_frames = num_frames
         self._interpolation = mode
-        self._norm = norm
         self._layout = layout
+
+        self._norm_mean = np.array(norm_mean, dtype=float)
+        self._norm_std = np.array(norm_std, dtype=float)
 
         super(RGBImagesFromList, self).__init__(*args, **kwargs)
         self._transform = seq_transformer or (lambda x: x)
@@ -100,25 +105,20 @@ class RGBImagesFromList(BasePreprocessor):
 
         return img_arr
 
-    def process(self, data, *args, **kwargs):
-        inp_img_arr = self.get_image_array(data)
+    def process(self, **kwargs):
+        processed = {}
+        for key, data in kwargs.items():
+            inp_img_arr = self.get_image_array(data)
 
-        out_img_arr = self._transform(inp_img_arr)
-        time_slice = self.interpolation_func[self._interpolation](self._num_frames, len(out_img_arr))
+            out_img_arr = self._transform(inp_img_arr)
+            time_slice = self.interpolation_func[self._interpolation](self._num_frames, len(out_img_arr))
+            img_arr = np.array(out_img_arr)[time_slice, :]
 
-        img_arr = np.array(out_img_arr)[time_slice, :]
+            img_arr = (img_arr - self._norm_mean) / self._norm_std
+            img_arr = img_arr.transpose(*self.layouts_signatures[self._layout])
 
-        if self._norm:
-            if img_arr.dtype == np.uint8:
-                img_arr = img_arr.astype(int)
-                img_arr = (img_arr - 128) / float(128)
-            else:
-                logger.debug('refusing to normalize float array')
-
-        img_arr = img_arr.transpose(*self.layouts_signatures[self._layout])
-
-        logger.debug('processed video stats: min={}, max={}'.format(img_arr.min(), img_arr.max()))
-        return img_arr
+            processed[key] = img_arr
+        return processed
 
     @property
     def provide_data(self):
