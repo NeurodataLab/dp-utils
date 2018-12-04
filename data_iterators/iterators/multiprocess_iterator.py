@@ -1,4 +1,5 @@
 import multiprocessing as mp
+from collections import defaultdict
 from queue import Full, Empty
 import mxnet as mx
 
@@ -70,7 +71,7 @@ class MultiProcessIterator(BaseIterator):
         indices_to_ret = []
 
         sample_num = 0
-        data_packs = {}
+        data_packs = defaultdict(list)
         while sample_num < self._batch_size:
             try:
                 idx, data_dict = self._output_storage.get(True, 10)
