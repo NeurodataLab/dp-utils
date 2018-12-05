@@ -3,7 +3,6 @@ import numpy as np
 import logging
 from collections import defaultdict
 
-from ...routines.data_structure_routines import merge_dicts
 from ... import ROOT_LOGGER_NAME, ROOT_LOGGER_LEVEL
 logger = logging.getLogger('{}.{}'.format(ROOT_LOGGER_NAME, __name__))
 logger.setLevel(ROOT_LOGGER_LEVEL)
@@ -101,7 +100,7 @@ class BaseIterator(object):
     __next__ = next
 
     def _pack_to_backend(self, data_pack, indices_pack):
-        data_batched = [self.packers[pack_type](data_pack[key]) for key, pack_type in self._packers.items()]
+        data_batched = [self.packers[self._packers[key]](data_pack[key]) for key, _ in self.provide_data]
         if not self._return_indices:
             return data_batched
         else:

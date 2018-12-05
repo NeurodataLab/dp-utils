@@ -21,8 +21,33 @@ class BasePreprocessor(object):
         return [(self._name, self._shape)]
 
     @property
+    def provide_output(self):
+        return [self._name]
+
+    @property
     def provide_input(self):
         return [self._name]
+
+
+class MIMOProcessor(BasePreprocessor):
+    def __init__(self, data_names, data_shapes, input_names, *args, **kwargs):
+        super(MIMOProcessor, self).__init__(*args, **kwargs)
+        self._data_shapes = data_shapes
+        self._data_names = data_names
+
+        self._input_names = input_names
+
+    @property
+    def provide_input(self):
+        return list(self._input_names)
+
+    @property
+    def provide_output(self):
+        return list(self._data_names)
+
+    @property
+    def provide_data(self):
+        return list(zip(self._data_names, self._data_shapes))
 
 
 class IdentityPreprocessor(BasePreprocessor):
