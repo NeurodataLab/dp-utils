@@ -1,3 +1,4 @@
+import numpy as np
 from .base_preprocessor import MIMOProcessor
 
 
@@ -19,6 +20,26 @@ class BoxLabelProcessor(MIMOProcessor):
     def process(self, **kwargs):
         bundle = self._transformer(**kwargs)
         return {name: data for name, data in zip(self.provide_output, bundle)}
+
+
+class BoxLabelBatchify(MIMOProcessor):
+
+    def __init__(self, max_boxes=20, input_names=('boxes', 'labels'), data_names=('boxes', 'labels'), *args, **kwargs):
+        super(BoxLabelBatchify, self).__init__(input_names=input_names, data_names=data_names,
+                                               data_shapes=[(max_boxes, 4), (max_boxes, 1)], *args, **kwargs)
+        self._max_boxes = max_boxes
+
+    def process(self, **kwargs):
+        boxes = kwargs[self.provide_input[0]]
+        labels = kwargs[self.provide_input[1]]
+
+        labels_batched = - np.ones((self._max_boxes, 1))
+        boxes_batched = np.zeros((self._max_boxes, 4))
+
+        labels_batched[:min(labels.shape[0], self._max_boxes), :] = labels[:min(labels.shape[0], self._max_boxes)]
+        boxes_batched[:min(boxes.shape[0], self._max_boxes), :] = boxes[:min(boxes.shape[0], self._max_boxes)]
+
+        return {name: pack for name, pack in zip(self.provide_output, [boxes_batched, labels_batched])}
 
 
 class CropRGBImage(MIMOProcessor):

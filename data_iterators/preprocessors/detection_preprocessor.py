@@ -3,7 +3,8 @@ from ...routines.data_structure_routines import merge_dicts
 
 
 class DetectionPreprocessor(MIMOProcessor):
-    def __init__(self, image_getter, box_label_getter, image_augmenter, box_cropper, image_cropper, *args, **kwargs):
+    def __init__(self, image_getter, box_label_getter, image_augmenter, box_cropper, image_cropper,
+                 batchifier, *args, **kwargs):
         """
         :param preprocessors: there must be image_getter, box_label_getter,
                                             image_augmenter, box_crop, image_cropper
@@ -14,6 +15,7 @@ class DetectionPreprocessor(MIMOProcessor):
         self._image_aug = image_augmenter
         self._box_cropper = box_cropper
         self._image_cropper = image_cropper
+        self._label_batchifier = batchifier
 
     def process(self, **kwargs):
         img_getter_inp = {name: kwargs[name] for name in self._image_getter.provide_input}
@@ -33,4 +35,8 @@ class DetectionPreprocessor(MIMOProcessor):
         image_aug_inp = {name: img_crop_out[name] for name in self._image_aug.provide_input}
         image_aug_out = self._image_aug.process(**image_aug_inp)
 
-        return {k: v for k, v in merge_dicts(image_aug_out, box_crop_out).items() if k in self.provide_output}
+        batchifier_inp_full = box_crop_out
+        batchifier_inp = {name: batchifier_inp_full[name] for name in self._label_batchifier.provide_input}
+        batchifier_out = self._label_batchifier.process(**batchifier_inp)
+
+        return {k: v for k, v in merge_dicts(image_aug_out, box_crop_out, batchifier_out).items() if k in self.provide_output}

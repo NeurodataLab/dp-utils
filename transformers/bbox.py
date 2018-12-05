@@ -72,7 +72,7 @@ def random_crop_with_constraints(boxes, labels, size, min_scale=0.3, max_scale=1
     crop_selector = np.any(crop_box_iou > min_iou_crop, axis=0)
     if crop_selector.sum() == 0:
         if target_shape is not None:
-            boxes = rel_boxes_resize_square(boxes=boxes, old_shape=target_shape)
+            boxes = rel_boxes_resize_square(boxes=boxes, old_shape=size)
         return zero_crop, (boxes, labels)
 
     crop_boxes = crop_boxes[crop_selector]
@@ -87,7 +87,7 @@ def random_crop_with_constraints(boxes, labels, size, min_scale=0.3, max_scale=1
     crop_selector = np.any(box_selector, axis=1)
     if crop_selector.sum() == 0:
         if target_shape is not None:
-            boxes = rel_boxes_resize_square(boxes=boxes, old_shape=target_shape)
+            boxes = rel_boxes_resize_square(boxes=boxes, old_shape=size)
         return zero_crop, (boxes, labels)
 
     crop_boxes = crop_boxes[crop_selector]
@@ -104,6 +104,6 @@ def random_crop_with_constraints(boxes, labels, size, min_scale=0.3, max_scale=1
     new_boxes = (orig_boxes_cropped[best_crop_id] - xy_arr) / whwh_arr
     labels[np.logical_not(box_selector[best_crop_id]), :] = -1
     if target_shape is not None:
-        new_boxes = rel_boxes_resize_square(boxes=new_boxes, old_shape=target_shape)
+        new_boxes = rel_boxes_resize_square(boxes=new_boxes, old_shape=whwh_arr[:2][::-1])
 
     return crop, (new_boxes, labels)

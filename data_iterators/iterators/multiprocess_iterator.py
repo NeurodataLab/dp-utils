@@ -43,7 +43,7 @@ class MultiProcessIterator(BaseIterator):
                         instance = {k: data_pack[k] for k in input_keys}
 
                         result.update(processor.process(**instance))
-                    result_queue.put((idx, result))
+                    result_queue.put((idx, result))  # TODO: probably put nowait
                 except (IndexError, IOError) as _:
                     logger.info('Probably no data for {}'.format(idx))
 

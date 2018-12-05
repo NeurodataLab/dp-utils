@@ -90,6 +90,21 @@ def get_light_augmentation_func(for_list=False, deterministic=False):
         return seq.augment_image
 
 
+def color_blur_augmentation(for_list=False, deterministic=False):
+    seq = iaa.Sequential([
+        iaa.ContrastNormalization((0.5, 1.5), per_channel=0.5),
+        iaa.Sometimes(0.5, iaa.GaussianBlur(sigma=(0, 1.))),
+        iaa.Multiply((0.8, 1.2), per_channel=0.2),
+        iaa.AdditiveGaussianNoise(loc=0, scale=(0.0, 0.06 * 255), per_channel=0.5),
+    ], random_order=True)
+    if deterministic:
+        seq = seq.to_deterministic()
+    if for_list:
+        return seq.augment_images
+    else:
+        return seq.augment_image
+
+
 def test_time_augmentation(image):
     aug1 = iaa.Pad(percent=(0., 0.2, 0.2, 0.), keep_size=True)
     aug2 = iaa.Pad(percent=(0.2, 0., 0.2, 0.), keep_size=True)

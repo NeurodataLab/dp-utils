@@ -14,7 +14,7 @@ def diag_iou(boxes1, boxes2):
     box1_area = (x12 - x11) * (y12 - y11)
     box2_area = (x22 - x21) * (y22 - y21)
 
-    return intersection / (box1_area + box2_area - intersection)
+    return intersection / (box1_area + box2_area - intersection + 1e-8)
 
 
 def full_iou(boxes1, boxes2):
