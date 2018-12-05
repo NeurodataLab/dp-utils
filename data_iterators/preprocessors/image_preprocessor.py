@@ -60,6 +60,11 @@ class RGBImageFromCallable(RGBImageFromFile):
         return self._getter(data)
 
 
+class RGBImageFromArray(RGBImageFromFile):
+    def get_image_array(self, data):
+        return data
+
+
 class RGBImagesFromList(BasePreprocessor):
     """
     Provides a transformed RGB images in CTHW, TCHW layout from list of files

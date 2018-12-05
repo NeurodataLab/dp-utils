@@ -29,7 +29,7 @@ class IdentityPreprocessor(BasePreprocessor):
     def __init__(self, *args, **kwargs):
         super(IdentityPreprocessor, self).__init__(*args, **kwargs)
 
-    def process(self, *args, **kwargs):
+    def process(self, **kwargs):
         return {key: np.atleast_1d(data) for key, data in kwargs.items()}
 
 

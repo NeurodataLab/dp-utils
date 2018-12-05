@@ -4,7 +4,7 @@ from kungfutils.transformers.iou import diag_iou, full_iou
 
 
 def random_crop_with_constraints(boxes, labels, size, min_scale=0.3, max_scale=1., max_aspect_ratio=2,
-                                 constraints=(0.3, 0.9), max_trial=10, min_size_px=32):
+                                 constraints=(0.3, 0.9), max_trial=10):
     """
     :param boxes: (N, 4), in relative coordinates (xyxy)
     :param labels (N, ?)

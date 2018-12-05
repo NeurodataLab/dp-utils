@@ -3,7 +3,7 @@ from ...routines.data_structure_routines import merge_dicts
 
 
 class CompositePreprocessor(BasePreprocessor):
-    def __init__(self, data_names, preprocessors, data_shapes, input_names, *args, **kwargs):
+    def __init__(self, preprocessors, data_names, data_shapes, input_names, *args, **kwargs):
         super(CompositePreprocessor, self).__init__(*args, **kwargs)
         self._shapes = data_shapes
         self._names = data_names
@@ -14,7 +14,7 @@ class CompositePreprocessor(BasePreprocessor):
 
     @property
     def provide_data(self):
-        return zip(self._names, self._shapes)
+        return list(zip(self._names, self._shapes))
 
     @property
     def provide_input(self):
