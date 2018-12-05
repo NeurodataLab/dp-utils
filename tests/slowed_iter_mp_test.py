@@ -24,8 +24,7 @@ if __name__ == '__main__':
     }
 
     iter_train = MultiProcessIterator(
-        balancer=balancer, data={'data': labels_data},
-        label={'label': labels_data},
+        balancer=balancer, data={'data': labels_data, 'label': labels_data},
         preprocessors=merge_dicts(data_proc, label_proc),
         batch_size=32,
         num_processes=8,

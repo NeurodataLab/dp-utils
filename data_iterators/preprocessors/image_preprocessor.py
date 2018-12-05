@@ -47,17 +47,14 @@ class RGBImageFromFile(BasePreprocessor):
         rgb = cv2.cvtColor(cv2.imread(data), cv2.COLOR_BGR2RGB)
         return rgb
 
-    def provide_data(self, *args, **kwargs):
-        return self._name, self._shape
-
 
 class RGBImageFromCallable(RGBImageFromFile):
-    def __init__(self, func, image_transformer=None, norm=True, *args, **kwargs):
+    def __init__(self, func, *args, **kwargs):
         """
         Is buggy when inferring shape
         """
         self._getter = func
-        super(RGBImageFromCallable, self).__init__(image_transformer=image_transformer, norm=norm, *args, **kwargs)
+        super(RGBImageFromCallable, self).__init__(*args, **kwargs)
 
     def get_image_array(self, data):
         return self._getter(data)
@@ -93,7 +90,7 @@ class RGBImagesFromList(BasePreprocessor):
         super(RGBImagesFromList, self).__init__(*args, **kwargs)
         self._transform = seq_transformer or (lambda x: x)
 
-        self._shape = self._shape or RGBImagesFromList.process(self, self.trial_data).shape
+        self._shape = self._shape
         self._name = self._name or 'default'
 
     def get_image_array(self, data):
@@ -119,18 +116,11 @@ class RGBImagesFromList(BasePreprocessor):
             processed[key] = img_arr
         return processed
 
-    def provide_data(self, *args, **kwargs):
-        return self._name, self._shape
-
 
 class RGBImagesFromCallable(RGBImagesFromList):
-    def __init__(self, func, num_frames, mode='interpolate', seq_transformer=None, norm=True,
-                 layout='CTHW', *args, **kwargs):
-        """
-        Is buggy when inferring shape
-        """
+    def __init__(self, func, *args, **kwargs):
         self._getter = func
-        super(RGBImagesFromCallable, self).__init__(num_frames, mode, seq_transformer, norm, layout, *args, **kwargs)
+        super(RGBImagesFromCallable, self).__init__(*args, **kwargs)
 
     def get_image_array(self, data):
         return self._getter(data)

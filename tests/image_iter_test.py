@@ -88,8 +88,7 @@ if __name__ == '__main__':
     }
 
     iter_train = BaseIterator(
-        balancer=balancer, data={'data': labels_data['path']},
-        label={'label': labels_data[dummies_cols].values},
+        balancer=balancer, data={'data': labels_data['path'], 'label': labels_data[dummies_cols].values},
         preprocessors=merge_dicts(data_proc, label_proc),
         batch_size=32
     )

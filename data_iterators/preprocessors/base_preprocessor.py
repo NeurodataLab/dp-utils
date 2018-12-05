@@ -16,8 +16,13 @@ class BasePreprocessor(object):
     def process(self, **kwargs):
         pass
 
-    def provide_data(self, *args, **kwargs):
-        return self._name, self._shape
+    @property
+    def provide_data(self):
+        return [(self._name, self._shape)]
+
+    @property
+    def provide_input(self):
+        return [self._name]
 
 
 class IdentityPreprocessor(BasePreprocessor):

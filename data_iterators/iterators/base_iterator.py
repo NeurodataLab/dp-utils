@@ -15,34 +15,25 @@ class BaseIterator(object):
         'mxnet': mx.nd.array, 'numpy': np.array, 'list': (lambda x: x)
     }
 
-    def __init__(self, balancer, data, preprocessors, label=None, packers=None,
+    def __init__(self, balancer, data, preprocessors, packers=None,
                  batch_size=32, num_batches=None, return_indices=False):
         """
         :param data: dict {data_name: iterable ...}
-        :param label: dict {label_name: iterable ...}
         :param balancer: instance of balancer
         :param preprocessors: dict {(names | name: preprocessor)}
         :param packers: dict {name: 'mxnet' | 'numpy' | 'list'}
         """
         self._return_indices = return_indices
-
         self._balancer = balancer
 
-        self._label = label or {}
         self._data = data
-
-        self._joint_storage = merge_dicts(self._data, self._label)
-
         self._preprocessors = preprocessors
 
         self._batch_size = batch_size
         self._num_batches = num_batches
         self._batch_counter = 0
 
-        self._data_keys = list(self._data.keys())
-        self._label_keys = list(self._label.keys())
-        self._joint_keys = self._data_keys + self._label_keys
-        self._packers = packers or {k: 'mxnet' for k in self._joint_keys}
+        self._packers = packers or {name: 'mxnet' for name, shape in self.provide_data}
         self._check_packers()
 
     def __iter__(self):
@@ -56,7 +47,7 @@ class BaseIterator(object):
 
     def get_params(self):
         return {
-            'batch_size': self.batch_size, 'data': self.provide_data, 'label': self.provide_label,
+            'batch_size': self.batch_size, 'data': self.provide_data,
             'processors': {k: str(v) for k, v in self._preprocessors.items()}
         }
 
@@ -70,11 +61,10 @@ class BaseIterator(object):
 
     @property
     def provide_data(self):
-        return [self.add_batch_size(self._preprocessors[key].provide_data(key)) for key in self._data_keys]
-
-    @property
-    def provide_label(self):
-        return [self.add_batch_size(self._preprocessors[key].provide_data(key)) for key in self._label_keys]
+        return [
+            self.add_batch_size(provided) for processor in self._preprocessors.values()
+            for provided in processor.provide_data
+        ]
 
     def _check_packers(self):
         if 'mxnet' in self._packers.values():
@@ -93,8 +83,8 @@ class BaseIterator(object):
             try:
                 data_instances_to_app = {}
                 for key, processor in self._preprocessors.items():
-                    key = key if isinstance(key, tuple) else (key,)
-                    instance = {k: self._joint_storage[k][cur_idx] for k in key}
+                    input_keys = processor.provide_input
+                    instance = {k: self._data[k][cur_idx] for k in input_keys}
                     data_instances_to_app.update(processor.process(**instance))
 
                 sample_num += 1
@@ -111,19 +101,8 @@ class BaseIterator(object):
     __next__ = next
 
     def _pack_to_backend(self, data_pack, indices_pack):
-        data_batched = [self.packers[self._packers[key]](data_pack[key]) for key in self._data_keys]
-        labels_batched = [self.packers[self._packers[key]](data_pack[key]) for key in self._label_keys]
-
-        use_mxnet = 'mxnet' in self._packers.values()
-
-        if use_mxnet:
-            logger.info('trying to pack data and labels to mxnet batch')
-            if not self._return_indices:
-                return mx.io.DataBatch(data=data_batched, label=labels_batched, pad=0)
-            else:
-                return mx.io.DataBatch(data=data_batched, label=labels_batched, pad=0), indices_pack
+        data_batched = [self.packers[pack_type](data_pack[key]) for key, pack_type in self._packers.items()]
+        if not self._return_indices:
+            return data_batched
         else:
-            if not self._return_indices:
-                return data_batched, labels_batched
-            else:
-                return (data_batched, labels_batched), indices_pack
+            return data_batched, indices_pack

@@ -39,8 +39,9 @@ class MultiProcessIterator(BaseIterator):
                 idx, data_pack = task_queue.get()  # waiting for available task
                 try:
                     for key, processor in self._preprocessors.items():
-                        key = key if isinstance(key, tuple) else (key,)
-                        instance = {k: self._joint_storage[k][idx] for k in key}
+                        input_keys = processor.provide_input
+                        instance = {k: data_pack[k] for k in input_keys}
+
                         result.update(processor.process(**instance))
                     result_queue.put((idx, result))
                 except (IndexError, IOError) as _:
@@ -54,7 +55,7 @@ class MultiProcessIterator(BaseIterator):
         while task_added < num_tasks:  # iterate until full or stop
             try:
                 idx = self._balancer.next()
-                data_pack = {key: self._joint_storage[key][idx] for key in self._joint_keys}
+                data_pack = {key: data[idx] for key, data in self._data.items()}
 
                 self._input_storage.put_nowait((idx, data_pack))
                 task_added += 1
@@ -89,5 +90,4 @@ class MultiProcessIterator(BaseIterator):
             raise StopIteration
 
         return self._pack_to_backend(data_packs, indices_to_ret)
-
 
