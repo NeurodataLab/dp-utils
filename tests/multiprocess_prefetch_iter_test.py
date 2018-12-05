@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 
-from kungfutils.data_iterators.iterators.multiprocess_iterator import MultiProcessIterator
+from kungfutils.data_iterators.iterators.multiprocess_prefetch_iterator import MultiProcessPrefetchIterator
 from kungfutils.data_iterators.balancers.ohc_balancer import OHCBalancer
 
 from kungfutils.data_iterators.preprocessors.base_preprocessor import SlowZeroArrayReader
@@ -22,7 +22,7 @@ if __name__ == '__main__':
         'label': IdentityPreprocessor(name='label', shape=(6,))
     }
 
-    iter_train = MultiProcessIterator(
+    iter_train = MultiProcessPrefetchIterator(
         balancer=balancer, data={'data': labels_data, 'label': labels_data},
         preprocessors=merge_dicts(data_proc, label_proc),
         batch_size=32,
