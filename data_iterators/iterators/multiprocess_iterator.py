@@ -1,12 +1,13 @@
 import multiprocessing as mp
 from collections import defaultdict
 from queue import Full, Empty
-import mxnet as mx
 
 import logging
+import numpy as np
 from multiprocessing_logging import install_mp_handler
 
 from .base_iterator import BaseIterator
+from ...routines.mp_routines import ArrayDictQueue
 from ... import ROOT_LOGGER_NAME, ROOT_LOGGER_LEVEL
 logger = logging.getLogger('{}.{}'.format(ROOT_LOGGER_NAME, __name__))
 logger.setLevel(ROOT_LOGGER_LEVEL)
@@ -14,14 +15,23 @@ install_mp_handler(logger=logger)
 
 
 class MultiProcessIterator(BaseIterator):
-    def __init__(self, num_processes, max_tasks=100, max_results=1000, *args, **kwargs):
+    def __init__(self, num_processes, max_tasks=100, max_results=100, use_shared=False, *args, **kwargs):
         super(MultiProcessIterator, self).__init__(*args, **kwargs)
         self._num_processes = num_processes
         self._max_tasks = max(max_tasks, self._batch_size)
         self._max_results = max(max_results, self._batch_size)
 
-        self._input_storage = mp.Queue(self._max_tasks)
-        self._output_storage = mp.Queue(self._max_results)
+        self._input_storage = mp.Queue(maxsize=self._max_tasks)
+        if use_shared:
+            check_packers_sh_mem = reduce(lambda x, y: x and y,
+                                          [i in ['numpy', 'mxnet'] for i in self._packers.values()])
+            assert check_packers_sh_mem, 'array packers needed for shared memory iterator'
+            logger.warning("Only floats are supported for array queue")
+            self._output_storage = ArrayDictQueue(
+                templates={name: np.zeros(shape[1:], dtype=float) for name, shape in self.provide_data},
+                maxsize=self._max_results)
+        else:
+            self._output_storage = mp.Queue(maxsize=self._max_results)
 
         worker_func = self._make_worker_func()
         self._workers = []
@@ -36,18 +46,24 @@ class MultiProcessIterator(BaseIterator):
         def task_func(task_queue, result_queue):
             while True:
                 result = {}
-                idx, data_pack = task_queue.get()  # waiting for available task
+                bundle = task_queue.get()  # waiting for available task
+                idx, data_pack = bundle['index'], {k: v for k, v in bundle.items() if k != 'index'}
                 try:
                     for key, processor in self._preprocessors.items():
                         input_keys = processor.provide_input
                         instance = {k: data_pack[k] for k in input_keys}
 
                         result.update(processor.process(**instance))
-                    result_queue.put((idx, result))  # TODO: probably put nowait
+                    result.update({'index': idx})
+                    result_queue.put(result)
                 except (IndexError, IOError) as _:
                     logger.info('Probably no data for {}'.format(idx))
 
         return task_func
+
+    def reset(self):
+        super(MultiProcessIterator, self).reset()
+        self._continue = self.next_tasks()
 
     def next_tasks(self, num_tasks=None):
         task_added = 0
@@ -56,8 +72,9 @@ class MultiProcessIterator(BaseIterator):
             try:
                 idx = self._balancer.next()
                 data_pack = {key: data[idx] for key, data in self._data.items()}
+                data_pack.update({'index': idx})
 
-                self._input_storage.put_nowait((idx, data_pack))
+                self._input_storage.put_nowait(data_pack)
                 task_added += 1
             except Full:
                 return True
@@ -69,13 +86,13 @@ class MultiProcessIterator(BaseIterator):
         if self._num_batches is not None and self._num_batches == self._batch_counter:
             raise StopIteration
 
-        indices_to_ret = []
-
         sample_num = 0
         data_packs = defaultdict(list)
+        indices_to_ret = []
         while sample_num < self._batch_size:
             try:
-                idx, data_dict = self._output_storage.get(True, 10)
+                bundle = self._output_storage.get(True, 10)
+                idx, data_dict = bundle['index'], {k: v for k, v in bundle.items() if k != 'index'}
                 # idx - sample index, data_dict - {'name': data, ...}
                 # if no exception here
                 sample_num += 1
