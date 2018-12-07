@@ -4,6 +4,13 @@ from kungfutils.transformers.iou import diag_iou, full_iou
 
 
 def rel_boxes_resize_square(boxes, old_shape):
+    """
+    Resize boxes in cases when image will be resized with preserving aspect ratio,
+    This is particular case for square final size
+    :param boxes: N,4 shape
+    :param old_shape: 2-tuple
+    :return: relative scale boxes for new image shape
+    """
     h0, w0 = old_shape
 
     dw0, dh0 = max(h0, w0) - w0, max(w0, h0) - h0
@@ -12,6 +19,31 @@ def rel_boxes_resize_square(boxes, old_shape):
     box_abs = boxes * np.tile(old_shape[::-1], 2)
     box_abs[:, 0::2] += dw0 / 2
     box_abs[:, 1::2] += dh0 / 2
+
+    box_abs[:, 0::2] /= w1
+    box_abs[:, 1::2] /= h1
+
+    return box_abs
+
+
+def rel_boxes_resize(boxes, old_shape, new_shape):
+    """
+    Resize boxes in cases when image will be resized with preserving aspect ratio,
+    :param boxes: N,4 shape
+    :param old_shape: 2-tuple
+    :param new_shape: 2-tuple
+    :return: relative scale boxes for new image shape
+    """
+    h0, w0 = old_shape
+    new_ar, old_ar = [float(shp[0]) / float(shp[1]) for shp in [new_shape, old_shape]]
+
+    h1, w1 = (h0 * new_ar / old_ar, w0) if new_ar >= old_ar else (h0, w0 * old_ar / new_ar)
+
+    dh, dw = h1 - h0, w1 - w0
+
+    box_abs = boxes * np.tile(old_shape[::-1], 2)
+    box_abs[:, 0::2] += dw / 2
+    box_abs[:, 1::2] += dh / 2
 
     box_abs[:, 0::2] /= w1
     box_abs[:, 1::2] /= h1
@@ -34,7 +66,6 @@ def random_crop_with_constraints(boxes, labels, size, min_scale=0.3, max_scale=1
                          will convert resulting boxes wrt to resizing and keeping aspect ratio
     :return:
     """
-    assert target_shape is None or target_shape[0] == target_shape[1], 'Implemented only for None and square final size'
 
     h, w = size
     zero_crop = np.array((0, 0, w, h))
@@ -66,19 +97,19 @@ def random_crop_with_constraints(boxes, labels, size, min_scale=0.3, max_scale=1
         [np.clip(new_boxes, a_min=np.tile(crop_box[:2], 2), a_max=np.tile(crop_box[2:], 2)) for crop_box in crop_boxes]
     )  # (num_attempts, num_boxes, 4)
 
-    # filter 2
+    # filter 1
     crop_box_iou = full_iou(new_boxes, crop_boxes)  # (box_id, crop_id), (num_boxes, num_attempts)
 
     crop_selector = np.any(crop_box_iou > min_iou_crop, axis=0)
     if crop_selector.sum() == 0:
         if target_shape is not None:
-            boxes = rel_boxes_resize_square(boxes=boxes, old_shape=size)
+            boxes = rel_boxes_resize(boxes=boxes, old_shape=size, new_shape=target_shape)
         return zero_crop, (boxes, labels)
 
     crop_boxes = crop_boxes[crop_selector]
     orig_boxes_cropped = orig_boxes_cropped[crop_selector]
 
-    # filter 1
+    # filter 2
     box_orig_iou = np.array([diag_iou(new_boxes, orig_boxes_c) for orig_boxes_c in orig_boxes_cropped])
     # (attempt_id, cur_box_id), (num_attempts, num_boxes)
 
@@ -87,7 +118,7 @@ def random_crop_with_constraints(boxes, labels, size, min_scale=0.3, max_scale=1
     crop_selector = np.any(box_selector, axis=1)
     if crop_selector.sum() == 0:
         if target_shape is not None:
-            boxes = rel_boxes_resize_square(boxes=boxes, old_shape=size)
+            boxes = rel_boxes_resize(boxes=boxes, old_shape=size, new_shape=target_shape)
         return zero_crop, (boxes, labels)
 
     crop_boxes = crop_boxes[crop_selector]
@@ -104,6 +135,6 @@ def random_crop_with_constraints(boxes, labels, size, min_scale=0.3, max_scale=1
     new_boxes = (orig_boxes_cropped[best_crop_id] - xy_arr) / whwh_arr
     labels[np.logical_not(box_selector[best_crop_id]), :] = -1
     if target_shape is not None:
-        new_boxes = rel_boxes_resize_square(boxes=new_boxes, old_shape=whwh_arr[:2][::-1])
+        new_boxes = rel_boxes_resize(boxes=new_boxes, old_shape=whwh_arr[:2][::-1], new_shape=target_shape)
 
     return crop, (new_boxes, labels)

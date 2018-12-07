@@ -34,7 +34,6 @@ def resize_image_keep_aspect(img, target_size=(500, 500)):
     new_size = tuple([int(x * min_ratio) for x in old_size])
 
     # new_size should be in (width, height) format
-    # TODO: different interpolations for different cases
     img = cv2.resize(img, (new_size[1], new_size[0]))
 
     delta_w = target_size[1] - new_size[1]
