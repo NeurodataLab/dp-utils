@@ -54,7 +54,7 @@ class ArrayDictQueue(object):
         self.q.put(dict_to_put, *args, **kwargs)
 
     def get(self, *args, **kwargs):
-        items = self.q.get(*args, **kwargs)
+        items = self.q.get(*args, **kwargs)  # *args, **kwargs are important
         ret_items = {}
         for q_name, item in items.items():
             if q_name == '__array_id__':

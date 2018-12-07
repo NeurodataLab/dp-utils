@@ -51,3 +51,32 @@ class CropRGBImage(MIMOProcessor):
         image, crop = kwargs[self.provide_input[0]], kwargs[self.provide_input[1]]
         cropped = image[slice(*crop[1::2]), slice(*crop[0::2])]
         return {self.provide_output[0]: cropped}
+
+
+class BoxImageFlip(MIMOProcessor):
+    def __init__(self, lr_flip_prob=0.5, ud_flip_prob=0.5, input_names=('image', 'boxes'),
+                 data_names=('image', 'boxes'), *args, **kwargs):
+        super(BoxImageFlip, self).__init__(input_names=input_names, data_names=data_names, *args, **kwargs)
+
+        self._lr_prob = lr_flip_prob
+        self._ud_prob = ud_flip_prob
+
+    def process(self, **kwargs):
+        # boxes is x, y, x, y, image is hwc
+        image, boxes = kwargs[self.provide_input[0]], kwargs[self.provide_input[1]]
+        to_crop_ud = np.random.random() < self._ud_prob
+        to_crop_lr = np.random.random() < self._lr_prob
+
+        if to_crop_ud:
+            boxes[:, 1::2] = 1 - boxes[:, 1::2]
+            to_swap1, to_swap2 = np.copy(boxes[:, 1]), np.copy(boxes[:, 3])
+            boxes[:, 1], boxes[:, 3] = to_swap2, to_swap1
+            image = image[::-1, :, :]
+
+        if to_crop_lr:
+            boxes[:, 0::2] = 1 - boxes[:, 0::2]
+            to_swap1, to_swap2 = np.copy(boxes[:, 0]), np.copy(boxes[:, 2])
+            boxes[:, 0], boxes[:, 2] = to_swap2, to_swap1
+            image = image[:, ::-1, :]
+
+        return {self.provide_output[0]: image, self.provide_output[1]: boxes}
