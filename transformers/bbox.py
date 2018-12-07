@@ -1,4 +1,5 @@
 import numpy as np
+import cv2
 
 from kungfutils.transformers.iou import diag_iou, full_iou
 
@@ -52,7 +53,7 @@ def rel_boxes_resize(boxes, old_shape, new_shape):
 
 
 def random_crop_with_constraints(boxes, labels, size, min_scale=0.3, max_scale=1., max_aspect_ratio=2,
-                                 constraints=(0.3, 0.9), max_trial=10, target_shape=None):
+                                 constraints=(0.3, 0.9), max_trial=10, min_size_px=None, target_shape=None):
     """
     :param boxes: (N, 4), in relative coordinates (xyxy)
     :param labels (N, ?)
@@ -64,16 +65,23 @@ def random_crop_with_constraints(boxes, labels, size, min_scale=0.3, max_scale=1
     :param max_trial: num of trials
     :param target_shape: size of image to be resized to,
                          will convert resulting boxes wrt to resizing and keeping aspect ratio
+    :param min_size_px: minimum pixel size on final image, whose target shape is target_shape
     :return:
     """
+    assertion = (min_size_px is None and target_shape is None) or (min_size_px is not None and target_shape is not None)
+    assert assertion, 'Both target_shape and min_size_px must be provided or none of them'
+
+    h_target, w_target = target_shape
+    boxes_px_target = rel_boxes_resize(boxes, size, target_shape) * np.array((w_target, h_target, w_target, h_target))
+    boxes_wh_px_target = boxes_px_target[:, 2:] - boxes_px_target[:, :2]
+    max_scale = max(min_scale, min(max_scale, boxes_wh_px_target.min() / float(min_size_px)))
 
     h, w = size
-    zero_crop = np.array((0, 0, w, h))
+    zero_crop = np.array((0, 0, 1., 1.))
 
-    new_boxes = boxes * np.array([w, h, w, h])
+    new_boxes = boxes * np.array((w, h, w, h))
 
-    min_iou_crop = constraints[0]
-    min_iou_orig = constraints[1]
+    min_iou_crop, min_iou_orig = constraints
 
     scales = np.random.uniform(min_scale, max_scale, size=max_trial)
 
@@ -102,8 +110,6 @@ def random_crop_with_constraints(boxes, labels, size, min_scale=0.3, max_scale=1
 
     crop_selector = np.any(crop_box_iou > min_iou_crop, axis=0)
     if crop_selector.sum() == 0:
-        if target_shape is not None:
-            boxes = rel_boxes_resize(boxes=boxes, old_shape=size, new_shape=target_shape)
         return zero_crop, (boxes, labels)
 
     crop_boxes = crop_boxes[crop_selector]
@@ -117,8 +123,6 @@ def random_crop_with_constraints(boxes, labels, size, min_scale=0.3, max_scale=1
 
     crop_selector = np.any(box_selector, axis=1)
     if crop_selector.sum() == 0:
-        if target_shape is not None:
-            boxes = rel_boxes_resize(boxes=boxes, old_shape=size, new_shape=target_shape)
         return zero_crop, (boxes, labels)
 
     crop_boxes = crop_boxes[crop_selector]
@@ -127,14 +131,53 @@ def random_crop_with_constraints(boxes, labels, size, min_scale=0.3, max_scale=1
 
     # choosing best crop id
     best_crop_id = np.argmax(box_selector.sum(axis=1))
+    best_box_selector = box_selector[best_crop_id]
 
-    crop = crop_boxes[best_crop_id]
+    crop = crop_boxes[best_crop_id, :]
     xy_arr = np.tile(crop[:2], 2)
     whwh_arr = np.tile(crop[2:] - crop[:2], 2)
 
-    new_boxes = (orig_boxes_cropped[best_crop_id] - xy_arr) / whwh_arr
-    labels[np.logical_not(box_selector[best_crop_id]), :] = -1
-    if target_shape is not None:
-        new_boxes = rel_boxes_resize(boxes=new_boxes, old_shape=whwh_arr[:2][::-1], new_shape=target_shape)
+    new_boxes = (orig_boxes_cropped[best_crop_id][best_box_selector] - xy_arr) / whwh_arr
+    # labels[np.logical_not(box_selector[best_crop_id]), :] = -1
+    labels = labels[best_box_selector, :]
 
     return crop, (new_boxes, labels)
+
+
+def random_downscale_with_constraints(image, boxes, min_scale=0.3, max_scale=1., min_size_px=None, target_shape=None):
+    """
+    :param image: image in HWC format
+    :param boxes: in xyxy format
+    :param min_scale:
+    :param max_scale:
+    :param min_size_px:
+    :param target_shape:
+    :return:
+    """
+    h, w, c = image.shape
+
+    h_target, w_target = target_shape
+    boxes_px_target = rel_boxes_resize(boxes, (h, w), target_shape) * np.array((w_target, h_target, w_target, h_target))
+    boxes_wh_px_target = boxes_px_target[:, 2:] - boxes_px_target[:, :2]
+
+    boxes_xyxy_px = boxes * np.array((w, h, w, h))
+
+    lower_scale_bound = min(max_scale, max(min_scale, min_size_px / boxes_wh_px_target.min()))
+
+    chosen_scale = lower_scale_bound + (max_scale - lower_scale_bound) * np.random.random()
+
+    h1, w1 = (int(h * chosen_scale), int(w * chosen_scale))
+    new_image = cv2.resize(image, (w1, h1))  # w h shape in resize
+
+    lt_placement = (np.random.random(size=2) * (np.array((w, h)) - np.array((w1, h1)))).astype(int)
+
+    new_boxes_px = boxes_xyxy_px * chosen_scale + np.tile(lt_placement, 2)  # w h arr
+
+    slices = [slice(i, i + j) for i, j in zip(lt_placement, (w1, h1))]
+
+    ret_image = np.zeros_like(image)
+    ret_image[slices[1], slices[0], :] = new_image
+
+    ret_boxes = new_boxes_px / np.array((w, h, w, h))
+
+    return ret_image, ret_boxes

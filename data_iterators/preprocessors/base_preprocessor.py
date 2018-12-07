@@ -85,6 +85,15 @@ class ArrayGetter(BasePreprocessor):
         return {key: self._getter_func(data) for key, data in kwargs.items()}
 
 
+class ArrayTransformer(BasePreprocessor):
+    def __init__(self, transformer, *args, **kwargs):
+        super(ArrayTransformer, self).__init__(*args, **kwargs)
+        self._transformer = transformer
+
+    def process(self, **kwargs):
+        return {key: self._transformer(data) for key, data in kwargs.items()}
+
+
 class SlowZeroArrayReader(ZeroArrayReader):
     def process(self, **kwargs):
         count_to = 0

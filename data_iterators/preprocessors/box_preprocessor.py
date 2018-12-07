@@ -1,4 +1,6 @@
+import cv2
 import numpy as np
+
 from .base_preprocessor import MIMOProcessor
 
 
@@ -15,6 +17,16 @@ class BoxLabelGetter(MIMOProcessor):
 class BoxLabelProcessor(MIMOProcessor):
     def __init__(self, func, input_names=('boxes', 'labels'), *args, **kwargs):
         super(BoxLabelProcessor, self).__init__(input_names=input_names, *args, **kwargs)
+        self._transformer = func
+
+    def process(self, **kwargs):
+        bundle = self._transformer(**kwargs)
+        return {name: data for name, data in zip(self.provide_output, bundle)}
+
+
+class BoxImageProcessor(MIMOProcessor):
+    def __init__(self, func, input_names=('image', 'boxes'), data_names=('image', 'boxes'), *args, **kwargs):
+        super(BoxImageProcessor, self).__init__(input_names=input_names, data_names=data_names, *args, **kwargs)
         self._transformer = func
 
     def process(self, **kwargs):

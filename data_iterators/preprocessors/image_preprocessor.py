@@ -4,7 +4,7 @@ import logging
 import numpy as np
 import os
 
-from .base_preprocessor import BasePreprocessor
+from .base_preprocessor import BasePreprocessor, MIMOProcessor
 from ...data_iterators import TRIAL_DATA_DIR
 from ...transformers.resizing import loop_video_size_casting, back_and_fourth_video_size_casting, \
     make_random_beginning_video_size_casting
@@ -58,6 +58,38 @@ class RGBImageFromCallable(RGBImageFromFile):
 
     def get_image_array(self, data):
         return self._getter(data)
+
+
+class RGBImageFromCallableMIMO(RGBImageFromCallable, MIMOProcessor):
+    def __init__(self, input_names, data_shapes, data_names=('image',), *args, **kwargs):
+        super(RGBImageFromCallableMIMO, self).__init__(
+            input_names=input_names, data_shapes=data_shapes, data_names=data_names, *args, **kwargs
+        )
+
+    @property
+    def provide_input(self):
+        return list(self._input_names)
+
+    @property
+    def provide_output(self):
+        return list(self._data_names)
+
+    @property
+    def provide_data(self):
+        return list(zip(self._data_names, self._data_shapes))
+
+    def process(self, **kwargs):
+        data = kwargs[self.provide_input[0]]
+        processed = {}
+
+        rgb = self.get_image_array(data)
+        img = self._transform(rgb)
+
+        img = (img - self._norm_mean) / self._norm_std
+        img = img.transpose(*self.layouts_signatures[self._layout])
+
+        processed[self.provide_output[0]] = img
+        return processed
 
 
 class RGBImageFromArray(RGBImageFromFile):
