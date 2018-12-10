@@ -4,7 +4,7 @@ import logging
 import numpy as np
 import os
 
-from .base_preprocessor import BasePreprocessor, MIMOProcessor
+from .base_preprocessor import BasePreprocessor, MIMOPreprocessor
 from ...data_iterators import TRIAL_DATA_DIR
 from ...transformers.resizing import loop_video_size_casting, back_and_fourth_video_size_casting, \
     make_random_beginning_video_size_casting
@@ -60,7 +60,7 @@ class RGBImageFromCallable(RGBImageFromFile):
         return self._getter(data)
 
 
-class RGBImageFromCallableMIMO(RGBImageFromCallable, MIMOProcessor):
+class RGBImageFromCallableMIMO(RGBImageFromCallable, MIMOPreprocessor):
     def __init__(self, input_names, data_shapes, data_names=('image',), *args, **kwargs):
         super(RGBImageFromCallableMIMO, self).__init__(
             input_names=input_names, data_shapes=data_shapes, data_names=data_names, *args, **kwargs

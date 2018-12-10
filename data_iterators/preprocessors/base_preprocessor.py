@@ -29,9 +29,9 @@ class BasePreprocessor(object):
         return [self._name]
 
 
-class MIMOProcessor(BasePreprocessor):
+class MIMOPreprocessor(BasePreprocessor):
     def __init__(self, data_names, data_shapes, input_names, *args, **kwargs):
-        super(MIMOProcessor, self).__init__(*args, **kwargs)
+        super(MIMOPreprocessor, self).__init__(*args, **kwargs)
         self._data_shapes = data_shapes
         self._data_names = data_names
 

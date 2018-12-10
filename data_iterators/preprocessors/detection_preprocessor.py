@@ -1,8 +1,8 @@
-from .base_preprocessor import MIMOProcessor
+from .base_preprocessor import MIMOPreprocessor
 from ...routines.data_structure_routines import merge_dicts
 
 
-class DetectionPreprocessor(MIMOProcessor):
+class DetectionPreprocessor(MIMOPreprocessor):
     def __init__(self, image_getter, box_label_getter, image_augmenter, box_cropper, image_cropper, image_box_flipper,
                  batchifier, image_box_downscale, rel_box_resizer, *args, **kwargs):
         """
