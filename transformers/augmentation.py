@@ -92,10 +92,10 @@ def get_light_augmentation_func(for_list=False, deterministic=False):
 
 def color_blur_augmentation(for_list=False, deterministic=False):
     seq = iaa.Sequential([
-        iaa.ContrastNormalization((0.5, 1.5), per_channel=0.5),
-        iaa.Sometimes(0.5, iaa.GaussianBlur(sigma=(0, 1.))),
+        iaa.ContrastNormalization((0.75, 1.25), per_channel=0.5),
+        iaa.Sometimes(0.5, iaa.GaussianBlur(sigma=(0, .5))),
         iaa.Multiply((0.8, 1.2), per_channel=0.2),
-        iaa.AdditiveGaussianNoise(loc=0, scale=(0.0, 0.06 * 255), per_channel=0.5),
+        iaa.AdditiveGaussianNoise(loc=0, scale=(0.0, 0.02 * 255), per_channel=0.5),
     ], random_order=True)
     if deterministic:
         seq = seq.to_deterministic()
