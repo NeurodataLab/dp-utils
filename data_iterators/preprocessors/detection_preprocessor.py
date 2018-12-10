@@ -4,7 +4,7 @@ from ...routines.data_structure_routines import merge_dicts
 
 class DetectionPreprocessor(MIMOPreprocessor):
     def __init__(self, image_getter, box_label_getter, image_augmenter, box_cropper, image_cropper, image_box_flipper,
-                 batchifier, image_box_downscale, rel_box_resizer, *args, **kwargs):
+                 batchifier, rel_box_resizer, *args, **kwargs):
         """
         :param preprocessors: there must be image_getter, box_label_getter, image_box_flipper,
                                             image_augmenter, box_crop, image_cropper
@@ -17,7 +17,6 @@ class DetectionPreprocessor(MIMOPreprocessor):
         self._image_cropper = image_cropper
         self._label_batchifier = batchifier
         self._image_box_flipper = image_box_flipper
-        self._image_box_downscale = image_box_downscale
         self._rel_box_resizer = rel_box_resizer
 
     def process(self, **kwargs):
@@ -35,13 +34,7 @@ class DetectionPreprocessor(MIMOPreprocessor):
         img_crop_inp = {name: img_crop_inp_full[name] for name in self._image_cropper.provide_input}
         img_crop_out = self._image_cropper.process(**img_crop_inp)
 
-        img_box_downscale_inp_full = merge_dicts(box_crop_out, img_crop_out)
-        img_box_downscale_inp = {
-            name: img_box_downscale_inp_full[name] for name in self._image_box_downscale.provide_input
-        }
-        img_box_downscale_out = self._image_box_downscale.process(**img_box_downscale_inp)
-
-        img_box_flipper_inp_full = img_box_downscale_out
+        img_box_flipper_inp_full = merge_dicts(box_crop_out, img_crop_out)
         img_box_flipper_inp = {name: img_box_flipper_inp_full[name] for name in self._image_box_flipper.provide_input}
         img_box_flipper_out = self._image_box_flipper.process(**img_box_flipper_inp)
 
