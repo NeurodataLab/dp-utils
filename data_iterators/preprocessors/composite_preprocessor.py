@@ -24,7 +24,7 @@ class CompositePreprocessor(BasePreprocessor):
         assert len(kwargs) == len(self._input_nodes), 'Not all inputs can be consumed'
         available_data = defaultdict(dict)
 
-        comp_queue = self._input_nodes.keys()
+        comp_queue = list(self._input_nodes.keys())
         comp_state = {k: kwargs[k] for k in self._input_nodes.values()}
 
         while len(comp_queue) != 0:
