@@ -55,7 +55,7 @@ class OHCBalancer(BaseBalancer):
             self.current_class += 1
 
     def pre_next(self):
-        if len(self._visited) % 100 == 0:
+        if self._verbose and len(self._visited) % 100 == 0:
             logger.info("visited set length - {}".format(len(self._visited)))
         if len(self._visited) == self.data_length:
             self.reset()

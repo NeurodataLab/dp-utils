@@ -10,7 +10,7 @@ class BaseBalancer(object):
     """
     Iterates through data
     """
-    def __init__(self, data, raise_on_end=False, shuffle=True, *args, **kwargs):
+    def __init__(self, data, raise_on_end=False, shuffle=True, verbose=False, *args, **kwargs):
         """
         Provides new index with next method, with corresponding balancing
         :param data: iterable with data to balance with
@@ -19,6 +19,7 @@ class BaseBalancer(object):
         self._shuffle = shuffle
         self._data = data
         self._raise_on_end = raise_on_end
+        self._verbose = verbose
 
         self._reset()
 
@@ -30,7 +31,7 @@ class BaseBalancer(object):
         self._visited = set()
 
     def pre_next(self):
-        if len(self._visited) % 100 == 0:
+        if self._verbose and len(self._visited) % 100 == 0:
             logger.info("visited set length - {}".format(len(self._visited)))
         if len(self._visited) == self.data_length:
             if self._raise_on_end:
