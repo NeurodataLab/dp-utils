@@ -77,7 +77,7 @@ def random_crop_with_constraints(boxes, labels, size, min_scale=0.3, max_scale=1
     max_scale = max(min_scale, min(max_scale, boxes_wh_px_target.min() / float(min_size_px)))
 
     h, w = size
-    zero_crop = np.array((0, 0, 1., 1.))
+    zero_crop = np.array((0, 0, w, h))
 
     new_boxes = boxes * np.array((w, h, w, h))
 
