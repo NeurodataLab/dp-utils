@@ -66,3 +66,59 @@ class BoxAccuracy(mx.metric.EvalMetric):
 
         self.sum_metric += np.abs((gt_classes == pred_classes_amax) * mask).sum()
         self.num_inst += np.sum(mask)  # mean per number of gt boxes
+
+
+class BoxClassPRBase(mx.metric.EvalMetric):
+    def __init__(self, class_index=1, class_threshold=0.5, output_names=None, label_names=None):
+
+        self.num_inst = 0.
+        self.sum_metric = 0.
+
+        self._tp = 0.
+        self._fp = 0.
+        self._fn = 0.
+
+        self._threshold = class_threshold
+        self._class_id = class_index
+
+        super(BoxClassPRBase, self).__init__(self.name, output_names=output_names, label_names=label_names)
+
+    def update(self, labels, preds, **kwargs):
+        """
+        :param labels: [(batch_size, num_anchors)] gt boxes
+        :param preds: [(batch_size, num_anchors, num_classes + 1)] predicted boxes
+        :param kwargs: kwargs['mask'] - (batch_size, num_anchors) mask, whether is a gt box, if None, calculate on all
+        """
+        mask = kwargs.get('mask', mx.nd.ones_like(labels[0])).asnumpy().astype(bool)
+        gt_classes = labels[0].asnumpy().astype(int).flatten()[mask.flatten()]
+        class_mask = preds[0][:, :, self._class_id].asnumpy().flatten()[mask.flatten()] > self._threshold
+
+        self._tp += (gt_classes[class_mask] == self._class_id).sum()
+        self._fp += (gt_classes[class_mask] != self._class_id).sum()
+        self._fn += (gt_classes[np.logical_not(class_mask)] == self._class_id).sum()
+
+        self.num_inst += class_mask.sum()
+
+    def reset(self):
+        super(BoxClassPRBase, self).reset()
+        self._fp, self._tp, self._fn = 0., 0., 0.
+
+
+class BoxClassPrecision(BoxClassPRBase):
+    def __init__(self, name_prefix='', *args, **kwargs):
+        self.name = '{}_{}'.format(name_prefix, 'precision')
+
+        super(BoxClassPrecision, self).__init__(*args, **kwargs)
+
+    def get(self):
+        return self.name, self._tp / (self._fp + self._tp)
+
+
+class BoxClassRecall(BoxClassPRBase):
+    def __init__(self, name_prefix='', *args, **kwargs):
+        self.name = '{}_{}'.format(name_prefix, 'recall')
+
+        super(BoxClassRecall, self).__init__(*args, **kwargs)
+
+    def get(self):
+        return self.name, self._tp / (self._fn + self._tp)
