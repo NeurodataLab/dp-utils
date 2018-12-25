@@ -1,3 +1,5 @@
+# THIS CODE IS STAGED FOR DELETION, DUE TO ITS STUPIDNESS AND NON GENERALITY
+
 from .base_preprocessor import MIMOPreprocessor
 from ...routines.data_structure_routines import merge_dicts
 

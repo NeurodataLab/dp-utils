@@ -1,5 +1,4 @@
 from collections import defaultdict
-
 import networkx as nx
 
 from .base_preprocessor import BasePreprocessor
@@ -20,8 +19,28 @@ class CompositePreprocessor(BasePreprocessor):
         for num, input_name in enumerate(input_names):
             self._proc_graph.add_node('input_{}'.format(input_name), name=input_name)
 
+        self._op_order = []
+
     def process(self, **kwargs):
         assert len(kwargs) == len(self._input_nodes), 'Not all inputs can be consumed'
+        if self.is_compiled:
+            return self._compiled_process(**kwargs)
+        else:
+            return self._not_compiled_process(**kwargs)
+
+    def _compiled_process(self, **kwargs):
+        assert self.is_compiled, 'Graph is not compiled, _compile_process cannot be launched'
+        comp_state = {k: kwargs[k] for k in self._input_nodes.values()}
+
+        for node_id in self._op_order:
+            processor = self._proc_graph.node[node_id]['processor']
+            inp = {name: comp_state[name] for name in processor.provide_input}
+            comp_state.update(processor.process(**inp))
+
+        return comp_state if self._output_names is None else {name: comp_state[name] for name in self._output_names}
+
+    def _not_compiled_process(self, **kwargs):
+        assert not self.is_compiled, 'Graph is already compiled, _no_compile_process cannot be launched'
         available_data = defaultdict(dict)
 
         comp_queue = list(self._input_nodes.keys())
@@ -29,10 +48,13 @@ class CompositePreprocessor(BasePreprocessor):
 
         while len(comp_queue) != 0:
             node_id = comp_queue.pop(0)
+
             if node_id in self._processors:
                 processor = self._proc_graph.node[node_id]['processor']
                 inp = {name: comp_state[name] for name in processor.provide_input}
                 comp_state.update(processor.process(**inp))
+
+                self._op_order.append(node_id)
 
             for successor in self._proc_graph.successors(node_id):
                 passed_args = self._proc_graph.get_edge_data(node_id, successor)
@@ -66,6 +88,10 @@ class CompositePreprocessor(BasePreprocessor):
             assert name in self._graph_heads, 'No {} in graph heads at the moment'.format(name)
             self._proc_graph.add_edge(self._graph_heads[name], proc_name, arg_name=name)
         self._graph_heads.update({new_out_name: proc_name for new_out_name in processor.provide_output})
+
+    @property
+    def is_compiled(self):
+        return len(self._op_order) != 0
 
     @property
     def provide_data(self):
