@@ -79,8 +79,7 @@ class BaseIterator(object):
         while sample_num < self._batch_size:
             cur_idx = self._balancer.next()
             instance = None
-            #try:
-            if True:
+            try:
                 data_instances_to_app = {}
                 for key, processor in self._preprocessors.items():
                     input_keys = processor.provide_input
@@ -91,8 +90,8 @@ class BaseIterator(object):
                 indices_to_ret.append(cur_idx)
                 for key, data in data_instances_to_app.items():
                     data_packs[key].append(data)
-            #except (IndexError, IOError) as _:
-            #    logger.info('Probably no data for {}, {}'.format(cur_idx, instance))
+            except (IndexError, IOError) as _:
+                logger.info('Probably no data for {}, {}'.format(cur_idx, instance))
 
         self._batch_counter += 1
 

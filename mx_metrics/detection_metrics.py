@@ -90,8 +90,10 @@ class BoxClassPRBase(mx.metric.EvalMetric):
         :param kwargs: kwargs['mask'] - (batch_size, num_anchors) mask, whether is a gt box, if None, calculate on all
         """
         mask = kwargs.get('mask', mx.nd.ones_like(labels[0])).asnumpy().astype(bool)
+        pred_probs = mx.nd.softmax(preds[0], axis=-1)
         gt_classes = labels[0].asnumpy().astype(int).flatten()[mask.flatten()]
-        class_mask = preds[0][:, :, self._class_id].asnumpy().flatten()[mask.flatten()] > self._threshold
+
+        class_mask = pred_probs[:, :, self._class_id].asnumpy().flatten()[mask.flatten()] > self._threshold
 
         self._tp += (gt_classes[class_mask] == self._class_id).sum()
         self._fp += (gt_classes[class_mask] != self._class_id).sum()
@@ -111,7 +113,7 @@ class BoxClassPrecision(BoxClassPRBase):
         super(BoxClassPrecision, self).__init__(*args, **kwargs)
 
     def get(self):
-        return self.name, self._tp / (self._fp + self._tp)
+        return self.name, self._tp / (self._fp + self._tp + 1e-8)
 
 
 class BoxClassRecall(BoxClassPRBase):
@@ -121,4 +123,4 @@ class BoxClassRecall(BoxClassPRBase):
         super(BoxClassRecall, self).__init__(*args, **kwargs)
 
     def get(self):
-        return self.name, self._tp / (self._fn + self._tp)
+        return self.name, self._tp / (self._fn + self._tp + 1e-8)
