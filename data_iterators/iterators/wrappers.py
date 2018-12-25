@@ -24,6 +24,9 @@ class MXNetBatchWrapper(object):
     def iter(self):
         return self
 
+    def reset(self):
+        self._iterator.reset()
+
     __iter__ = iter
 
     @property

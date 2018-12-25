@@ -35,6 +35,7 @@ class SklearnReportMX(mx.metric.EvalMetric):
         self.preds.append(preds)
 
         self.num_inst += len(labels)
+        print('kek')
 
     def reset(self):
         try:

@@ -2,12 +2,18 @@ import subprocess
 import ffmpeg
 import numpy as np
 import re
+import logging
 from decimal import Decimal
+
+from .. import ROOT_LOGGER_NAME, ROOT_LOGGER_LEVEL
+logger = logging.getLogger('{}.{}'.format(ROOT_LOGGER_NAME, __name__))
+logger.setLevel(ROOT_LOGGER_LEVEL)
 
 
 def get_video_length(path):
     process = subprocess.Popen(['/usr/bin/ffprobe', '-i', path], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     stdout, stderr = process.communicate()
+    print stdout
     matches = re.search(
         r"Duration:\s{1}(?P<hours>\d+?):(?P<minutes>\d+?):(?P<seconds>\d+\.\d+?),", stdout, re.DOTALL).groupdict()
 
@@ -25,6 +31,7 @@ def get_video_length(path):
 def get_fps(path):
     process = subprocess.Popen(['/usr/bin/ffprobe', '-i', path], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     stdout, stderr = process.communicate()
+    print ('stdout', stdout)
     matches = re.search(
         r", (?P<fps>\d+(\.\d+)?)\s+fps", stdout, re.DOTALL).groupdict()
     fps = Decimal(matches['fps'])
@@ -39,7 +46,7 @@ def frame_array_from_video(video_path, ts_start=0., ts_end=None, drop_frames_fps
     :param drop_frames_fps: if not None, then will drop or add frames to make video 25fps
     :return: array of shape (t, h, w, 3)
     """
-
+    logger.debug('read {}'.format(video_path))
     ts_end = ts_end or get_video_length(video_path)
 
     probe = ffmpeg.probe(video_path)
@@ -61,4 +68,7 @@ def frame_array_from_video(video_path, ts_start=0., ts_end=None, drop_frames_fps
         frames_getter = np.linspace(0, video.shape[0], num=int(num_frames_to_take), endpoint=False).astype(int)
 
         video = video[frames_getter, :]
+
+    logger.debug('read end {}'.format(video_path))
+
     return video
