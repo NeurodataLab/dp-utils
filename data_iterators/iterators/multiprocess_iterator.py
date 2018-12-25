@@ -23,8 +23,9 @@ class MultiProcessIterator(BaseIterator):
 
         self._input_storage = mp.Queue(maxsize=self._max_tasks)
         if use_shared:
-            check_packers_sh_mem = reduce(lambda x, y: x and y,
-                                          [i in ['numpy', 'mxnet'] for i in self._packers.values()])
+            check_packers_sh_mem = reduce(
+                lambda x, y: x and y, [i in ['numpy', 'mxnet'] for i in self._packers.values()]
+            )
             assert check_packers_sh_mem, 'array packers needed for shared memory iterator'
             logger.warning("Only floats are supported for array queue")
             self._output_storage = ArrayDictQueue(
