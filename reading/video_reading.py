@@ -13,7 +13,6 @@ logger.setLevel(ROOT_LOGGER_LEVEL)
 def get_video_length(path):
     process = subprocess.Popen(['/usr/bin/ffprobe', '-i', path], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     stdout, stderr = process.communicate()
-    print stdout
     matches = re.search(
         r"Duration:\s{1}(?P<hours>\d+?):(?P<minutes>\d+?):(?P<seconds>\d+\.\d+?),", stdout, re.DOTALL).groupdict()
 
@@ -31,7 +30,6 @@ def get_video_length(path):
 def get_fps(path):
     process = subprocess.Popen(['/usr/bin/ffprobe', '-i', path], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     stdout, stderr = process.communicate()
-    print ('stdout', stdout)
     matches = re.search(
         r", (?P<fps>\d+(\.\d+)?)\s+fps", stdout, re.DOTALL).groupdict()
     fps = Decimal(matches['fps'])
