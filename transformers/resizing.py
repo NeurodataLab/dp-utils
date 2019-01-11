@@ -9,7 +9,7 @@ logger.setLevel(ROOT_LOGGER_LEVEL)
 
 def resize_frames(video_arr, target_size, keep_aspect_ratio=False):
     """
-    :param video_arr: THWC format array
+    :param video_arr: THWC format array or list
     :param target_size: h, w
     :param keep_aspect_ratio: True/False
     :return:

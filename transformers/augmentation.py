@@ -36,14 +36,14 @@ def get_identity_augmenter(*args, **kwargs):
 def get_fixed_augmenter(seed=42, *args, **kwargs):
     np.random.seed(seed)
     params = {
-        'flip_lr': float(np.random.randint(0, 2)),
+        'flip_lr': float(0.5),
         'if_gb_lr': float(np.random.randint(0, 2)),
         'crop': np.random.rand() * 0.2,
         'gb': np.random.rand() * 0.1,
         'contrast': 0.8 + np.random.rand() * 0.2,
         'aff_trans_x': -0.05 + np.random.rand() * 0.1,
         'aff_trans_y': -0.05 + np.random.rand() * 0.1,
-        'aff_rotate': int(-15 + 30 * np.random.rand())
+        'aff_rotate': int(-10 + 20 * np.random.rand())
     }
 
     seq = iaa.Sequential([
