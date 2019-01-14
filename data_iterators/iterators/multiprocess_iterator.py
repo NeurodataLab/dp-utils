@@ -57,6 +57,7 @@ class MultiProcessIterator(BaseIterator):
                         result.update(processor.process(**instance))
                     result.update({'index': idx})
                     result_queue.put(result)
+
                 except (IndexError, IOError) as _:
                     logger.info('Probably no data for {}'.format(idx))
 

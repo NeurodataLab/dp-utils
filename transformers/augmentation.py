@@ -36,7 +36,7 @@ def get_identity_augmenter(*args, **kwargs):
 def get_fixed_augmenter(seed=42, *args, **kwargs):
     np.random.seed(seed)
     params = {
-        'flip_lr': float(0.5),
+        'flip_lr': float(np.random.randint(0, 2)),
         'if_gb_lr': float(np.random.randint(0, 2)),
         'crop': np.random.rand() * 0.2,
         'gb': np.random.rand() * 0.1,

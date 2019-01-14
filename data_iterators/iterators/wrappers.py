@@ -19,6 +19,8 @@ class MXNetBatchWrapper(object):
         data = [ret_arrays[num] for num, desc in enumerate(whole) if desc in self.provide_data]
         labels = [ret_arrays[num] for num, desc in enumerate(whole) if desc in self.provide_label]
 
+        if self._iterator.batch_size - len(data[0]) != 0:
+            raise StopIteration
         return mx.io.DataBatch(data=data, label=labels, pad=0)
 
     def iter(self):
