@@ -8,6 +8,19 @@ class MXNetBatchWrapper(object):
         self._data_names = data_names
         self._label_names = label_names
 
+        self._pad_delta = 0
+
+    def _pad_batch(self, data):
+        self._pad_delta = self._iterator.batch_size - data.shape[0]
+
+        if self._pad_delta == 0:
+            return data
+        else:
+            indices = mx.nd.arange(0, self._iterator.batch_size, dtype=int)
+            indices_zeros = mx.nd.zeros_like(indices)
+            indices = mx.nd.where(indices >= data.shape[0], indices_zeros, indices)
+            return mx.nd.take(data, indices=indices, axis=0)
+
     def next(self):
         if self._iterator.return_indices:
             ret_arrays, _ = self._iterator.next()
@@ -16,12 +29,10 @@ class MXNetBatchWrapper(object):
 
         whole = self._iterator.provide_data
 
-        data = [ret_arrays[num] for num, desc in enumerate(whole) if desc in self.provide_data]
-        labels = [ret_arrays[num] for num, desc in enumerate(whole) if desc in self.provide_label]
+        data = [self._pad_batch(ret_arrays[num]) for num, desc in enumerate(whole) if desc in self.provide_data]
+        labels = [self._pad_batch(ret_arrays[num]) for num, desc in enumerate(whole) if desc in self.provide_label]
 
-        if self._iterator.batch_size - len(data[0]) != 0:
-            raise StopIteration
-        return mx.io.DataBatch(data=data, label=labels, pad=0)
+        return mx.io.DataBatch(data=data, label=labels, pad=self._pad_delta)
 
     def iter(self):
         return self
