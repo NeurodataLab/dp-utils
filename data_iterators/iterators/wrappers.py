@@ -2,13 +2,14 @@ import mxnet as mx
 
 
 class MXNetBatchWrapper(object):
-    def __init__(self, data_names, label_names, iterator):
+    def __init__(self, data_names, label_names, iterator, pad=False):
         self._iterator = iterator
 
         self._data_names = data_names
         self._label_names = label_names
 
         self._pad_delta = 0
+        self._pad = pad
 
     def _pad_batch(self, data):
         self._pad_delta = self._iterator.batch_size - data.shape[0]
@@ -29,8 +30,12 @@ class MXNetBatchWrapper(object):
 
         whole = self._iterator.provide_data
 
-        data = [self._pad_batch(ret_arrays[num]) for num, desc in enumerate(whole) if desc in self.provide_data]
-        labels = [self._pad_batch(ret_arrays[num]) for num, desc in enumerate(whole) if desc in self.provide_label]
+        if self._pad:
+            data = [self._pad_batch(ret_arrays[num]) for num, desc in enumerate(whole) if desc in self.provide_data]
+            labels = [self._pad_batch(ret_arrays[num]) for num, desc in enumerate(whole) if desc in self.provide_label]
+        else:
+            data = [ret_arrays[num] for num, desc in enumerate(whole) if desc in self.provide_data]
+            labels = [ret_arrays[num] for num, desc in enumerate(whole) if desc in self.provide_label]
 
         return mx.io.DataBatch(data=data, label=labels, pad=self._pad_delta)
 
