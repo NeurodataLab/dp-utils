@@ -2,12 +2,12 @@
 NeurodataLab LLC 21.01.2019
 Created by Andrey Belyaev
 """
-import numpy as np
 import logging
+import numpy as np
 
 from .base_balancer import BaseBalancer
-
 from ... import ROOT_LOGGER_NAME, ROOT_LOGGER_LEVEL
+
 logger = logging.getLogger('{}.{}'.format(ROOT_LOGGER_NAME, __name__))
 logger.setLevel(ROOT_LOGGER_LEVEL)
 
