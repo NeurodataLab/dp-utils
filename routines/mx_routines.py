@@ -1,3 +1,4 @@
+import mxnet as mx
 import json
 import copy
 import logging
@@ -30,7 +31,7 @@ def rename_symbol(symbol_path, prefix):
     json.dump(symbol_data, open(symbol_path + '.original', 'w'))
 
 
-def parse_network(network, outputs, inputs, pretrained=False):
+def parse_network(network, outputs, inputs, pretrained=False, ctx=mx.cpu()):
     """Parse network with specified outputs and other arguments.
 
     Parameters
