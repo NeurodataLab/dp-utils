@@ -1,6 +1,6 @@
 import multiprocessing as mp
 from collections import defaultdict
-from Queue import Full, Empty
+from queue import Full, Empty
 
 import logging
 import numpy as np
