@@ -1,7 +1,7 @@
 import logging
 import mxnet as mx
 import numpy as np
-from sklearn.metrics import accuracy_score, log_loss
+from sklearn.metrics import accuracy_score, log_loss, roc_auc_score
 
 
 from .. import ROOT_LOGGER_NAME, ROOT_LOGGER_LEVEL
@@ -60,6 +60,15 @@ def get_accuracy(y_label, y_pred):
     ids_pred = np.argmax(y_pred, axis=1)
     logger.debug('passed predictions and trues: {}, {}'.format(ids_pred, ids_label))
     return accuracy_score(y_pred=ids_pred, y_true=ids_label)
+
+
+def get_1_off_roc_auc(y_label, y_pred, class_id):
+    y_l = (np.argmax(y_label, axis=1) == class_id).astype(int)
+    y_pred = y_pred[:, class_id]
+    try:
+        return roc_auc_score(y_l, y_pred)
+    except ValueError:
+        return 0.
 
 
 def make_log_loss(labels):
