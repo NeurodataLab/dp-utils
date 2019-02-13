@@ -89,3 +89,31 @@ def parse_network(network, outputs, inputs, pretrained=False, ctx=mx.cpu()):
     outputs = [out if out.endswith('_output') else out + '_output' for out in outputs]
     outputs = [network.get_internals()[prefix + out] for out in outputs]
     return inputs, outputs, params
+
+
+def symbol_to_symbol_block(prefix, epoch, inputs, outputs):
+    import mxnet.gluon as gluon
+    from kungfutils.routines.string_routines import generate_id
+
+    sym, arg_params, aux_params = mx.model.load_checkpoint(prefix=prefix, epoch=epoch)
+
+    inp_names = inputs
+    inputs = mx.sym.Group(*[mx.sym.var(i) for i in inputs])
+    sym = sym(inputs)
+
+    internals = sym.get_internals()
+    outputs = [internals['{}_output'.format(i)] for i in outputs]
+    outputs = mx.sym.Group(outputs)
+
+    model_uid = generate_id(10)
+
+    mx.model.save_checkpoint(
+        prefix=model_uid, epoch=0,
+        arg_params=arg_params, aux_params=aux_params, symbol=outputs)
+
+    block = gluon.SymbolBlock.imports(
+        '{}-symbol.json'.format(model_uid), ctx=mx.cpu(), input_names=inp_names)
+    block.load_parameters(
+        '{}-0000.params'.format(model_uid), allow_missing=True, ignore_extra=True, ctx=mx.cpu())
+
+    return block
