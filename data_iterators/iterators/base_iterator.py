@@ -90,7 +90,7 @@ class BaseIterator(object):
                 indices_to_ret.append(cur_idx)
                 for key, data in data_instances_to_app.items():
                     data_packs[key].append(data)
-            except (IndexError, IOError) as _:
+            except (IndexError, IOError, ValueError) as _:
                 logger.info('Probably no data for {}, {}'.format(cur_idx, instance))
 
         self._batch_counter += 1
