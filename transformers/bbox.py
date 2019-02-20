@@ -52,8 +52,9 @@ def rel_boxes_resize(boxes, old_shape, new_shape):
     return box_abs
 
 
-def random_crop_with_constraints(boxes, labels, size, min_scale=0.3, max_scale=1., max_aspect_ratio=2,
-                                 constraints=(0.3, 0.9), max_trial=10, min_size_px=None, target_shape=None):
+def random_crop_with_constraints(boxes, labels, size, min_scale=0.1, max_scale=1., strategy_switch_scale=0.3,
+                                 max_aspect_ratio=2, constraints=(0.3, 0.9),
+                                 max_trial=10, min_size_px=None, target_shape=None):
     """
     :param boxes: (N, 4), in relative coordinates (xyxy)
     :param labels (N, ?)
@@ -93,8 +94,21 @@ def random_crop_with_constraints(boxes, labels, size, min_scale=0.3, max_scale=1
     crop_hs = (h * scales / np.sqrt(aspect_ratios))
     crop_ws = (w * scales * np.sqrt(aspect_ratios))
 
-    crop_ts = (h - crop_hs) * np.random.uniform(size=crop_hs.shape)
-    crop_ls = (w - crop_ws) * np.random.uniform(size=crop_ws.shape)
+    if max_scale < strategy_switch_scale:
+        box_indices = np.random.randint(0, new_boxes.shape[0], size=max_trial)
+        sampled_boxes = new_boxes[box_indices]
+
+        box_tops = sampled_boxes[:, :2]
+        box_wh = sampled_boxes[:, 2:] - sampled_boxes[:, :2]
+
+        sample_offset_w = crop_ws - box_wh[:, 0]
+        sample_offset_h = crop_hs - box_wh[:, 1]
+
+        crop_ts = np.clip(box_tops[:, 1] - sample_offset_h * np.random.uniform(size=crop_hs.shape), 0, None)
+        crop_ls = np.clip(box_tops[:, 0] - sample_offset_w * np.random.uniform(size=crop_ws.shape), 0, None)
+    else:
+        crop_ts = (h - crop_hs) * np.random.uniform(size=crop_hs.shape)
+        crop_ls = (w - crop_ws) * np.random.uniform(size=crop_ws.shape)
 
     crop_bs = crop_ts + crop_hs
     crop_rs = crop_ls + crop_ws
@@ -144,6 +158,10 @@ def random_crop_with_constraints(boxes, labels, size, min_scale=0.3, max_scale=1
     return crop, (new_boxes, labels)
 
 
+def loguniform(low=0, high=1, size=None, base=10.):
+    return (np.power(base, np.random.uniform(low, high, size)) - 1) / (base - 1)
+
+
 def random_downscale_with_constraints(image, boxes, min_scale=0.3, max_scale=1., min_size_px=None, target_shape=None):
     """
     :param image: image in HWC format
@@ -164,7 +182,7 @@ def random_downscale_with_constraints(image, boxes, min_scale=0.3, max_scale=1.,
 
     lower_scale_bound = min(max_scale, max(min_scale, min_size_px / boxes_wh_px_target.min()))
 
-    chosen_scale = lower_scale_bound + (max_scale - lower_scale_bound) * np.random.random()
+    chosen_scale = lower_scale_bound + (max_scale - lower_scale_bound) * loguniform()
 
     h1, w1 = (int(h * chosen_scale), int(w * chosen_scale))
     new_image = cv2.resize(image, (w1, h1))  # w h shape in resize
