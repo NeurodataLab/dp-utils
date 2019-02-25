@@ -1,4 +1,6 @@
 import re
+import random
+import string
 import logging
 
 from .. import ROOT_LOGGER_NAME, ROOT_LOGGER_LEVEL
@@ -40,3 +42,7 @@ def is_substring_of_any(str, lst):
     for to_cmp in lst:
         ret = ret or (str in to_cmp)
     return ret
+
+
+def generate_id(size=6, chars=string.ascii_uppercase + string.digits):
+    return ''.join(random.choice(chars) for _ in range(size))
