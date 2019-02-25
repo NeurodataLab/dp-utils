@@ -10,12 +10,13 @@ logger.setLevel(ROOT_LOGGER_LEVEL)
 
 class OHCBalancer(BaseBalancer):
     """
-    Balances equalizing classes by OH data
+    Balancer equalizing classes by one hot encoded data
     """
     def __init__(self, data, raise_on_end, shuffle=True, *args, **kwargs):
         """
         :param data: numpy array with (num_samples, num_classes) shape
         :param raise_on_end: either raise when everything is visited
+        :param shuffle: shuffle data
         """
         super(OHCBalancer, self).__init__(data=data, raise_on_end=raise_on_end, shuffle=shuffle, *args, **kwargs)
 

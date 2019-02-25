@@ -2,7 +2,14 @@ import mxnet as mx
 
 
 class MXNetBatchWrapper(object):
+    """mxnet batch iterator wrapper of instance of BaseIterator or MPIterator"""
     def __init__(self, data_names, label_names, iterator, pad=False):
+        """
+        :param data_names: names of data to be put in provide_data
+        :param label_names: names of data to be put in provide_label
+        :param iterator: BaseIterator or MPIterator
+        :param pad: pad last batch or not
+        """
         self._iterator = iterator
 
         self._data_names = data_names

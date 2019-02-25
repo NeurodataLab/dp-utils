@@ -14,9 +14,17 @@ logger.setLevel(ROOT_LOGGER_LEVEL)
 
 class BasketBalancer(BaseBalancer):
     """
-    Balances samples across baskets
+    Balances samples across baskets, yielding instance from basket 1, then from basket 2, 3, 4, 5,
+    stops on either end of index or end of basket
     """
     def __init__(self, data, baskets, raise_on_data_end, raise_on_basket_end, shuffle=True, *args, **kwargs):
+        """
+        :param data: iterable with indices that will be passed into processors
+        :param baskets: basket by which index is split
+        :param raise_on_data_end: raise either on index end
+        :param raise_on_basket_end: or basket end
+        :param shuffle: shuffle data index
+        """
         self._baskets = baskets
         self._raise_on_data_end = raise_on_data_end
         self._raise_on_basket_end = raise_on_basket_end

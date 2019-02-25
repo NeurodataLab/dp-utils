@@ -12,6 +12,7 @@ logger.setLevel(ROOT_LOGGER_LEVEL)
 
 
 class MergedBalancer(BaseBalancer):
+    """Iterate through set list of balancer, return either multi index or index from current balancer"""
     def __init__(self, balancers, multi_indexes=False):
         self.balancers = balancers
         self.cur_balancer_num = 0

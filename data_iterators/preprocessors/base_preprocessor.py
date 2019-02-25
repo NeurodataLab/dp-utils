@@ -8,7 +8,7 @@ logger.setLevel(ROOT_LOGGER_LEVEL)
 
 
 class BasePreprocessor(object):
-
+    """Base class for preprocessors"""
     def __init__(self, name=None, shape=None, *args, **kwargs):
         self._shape = shape
         self._name = name
@@ -30,6 +30,10 @@ class BasePreprocessor(object):
 
 
 class MIMOPreprocessor(BasePreprocessor):
+    """
+    Base class for processors, taking multiple inputs and returning multiple outputs,
+    refer to box_preprocessors for examples
+    """
     def __init__(self, data_names, data_shapes, input_names, *args, **kwargs):
         super(MIMOPreprocessor, self).__init__(*args, **kwargs)
         self._data_shapes = data_shapes

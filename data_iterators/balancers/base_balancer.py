@@ -8,13 +8,15 @@ logger.setLevel(ROOT_LOGGER_LEVEL)
 
 class BaseBalancer(object):
     """
-    Iterates through data
+    Iterates through index with one by one provided iterable data
     """
     def __init__(self, data, raise_on_end=False, shuffle=True, verbose=False, *args, **kwargs):
         """
-        Provides new index with next method, with corresponding balancing
-        :param data: iterable with data to balance with
+        Provides new index balancer with next method, with corresponding balancing
+        :param data: iterable with indices that will be passed into processors
         :param raise_on_end: raise StopIteration when every label is visited
+        :param shuffle: permute provided index
+        :param verbose: whether balancer yields messages to balancer
         """
         self._shuffle = shuffle
         self._data = data

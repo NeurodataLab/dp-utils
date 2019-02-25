@@ -9,6 +9,9 @@ logger.setLevel(ROOT_LOGGER_LEVEL)
 
 
 class SoftmaxBalancer(OHCBalancer):
+    """
+    Balances on argmax instead of one in one hot encoding
+    """
     def _split_by_classes(self):
         self._per_class_index = []
 

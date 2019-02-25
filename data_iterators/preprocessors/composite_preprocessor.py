@@ -5,6 +5,10 @@ from .base_preprocessor import BasePreprocessor
 
 
 class CompositePreprocessor(BasePreprocessor):
+    """
+    Preprocessor with Keras-like interface for editing data processing pipeline,
+    suitable for cases when data preprocessing is interdependent multi-stage.
+    """
     def __init__(self, input_names, output_names=None, *args, **kwargs):
         super(CompositePreprocessor, self).__init__(*args, **kwargs)
         self._proc_graph = nx.MultiDiGraph()

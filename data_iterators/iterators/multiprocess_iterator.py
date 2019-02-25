@@ -15,7 +15,15 @@ install_mp_handler(logger=logger)
 
 
 class MultiProcessIterator(BaseIterator):
+    """Iterates through data with base iterator interface, implementing in-batch parallelism"""
     def __init__(self, num_processes, max_tasks=100, max_results=100, use_shared=False, *args, **kwargs):
+        """
+        :param num_processes: number of processes two be used by iterator
+        :param max_tasks: max number of tasks to be put in tasks queue
+        :param max_results: max volume of output queue
+        :param use_shared: whether to use array queue for passing big arrays without pickling them
+        """
+
         super(MultiProcessIterator, self).__init__(*args, **kwargs)
         self._num_processes = num_processes
         self._max_tasks = max(max_tasks, self._batch_size)
