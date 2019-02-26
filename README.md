@@ -8,8 +8,3 @@
 ### IO helper utils
 * ffmpeg wrappers
 * file utils
-
-### mxnet metrics and metric packs
-* metric packs in one line for multi class and single class classification tasks
-
-### etc   
