@@ -1,7 +1,7 @@
 import numpy as np
 import cv2
 
-from kungfutils.transformers.iou import diag_iou, full_iou
+from .iou import diag_iou, full_iou
 
 
 def rel_boxes_resize_square(boxes, old_shape):
@@ -56,12 +56,14 @@ def random_crop_with_constraints(boxes, labels, size, min_scale=0.1, max_scale=1
                                  max_aspect_ratio=2, constraints=(0.3, 0.9),
                                  max_trial=10, min_size_px=None, target_shape=None):
     """
+    :param strategy_switch_scale: scale on which switch from random crop strategy
+                                  to sample box from image and make crop around it
     :param boxes: (N, 4), in relative coordinates (xyxy)
     :param labels (N, ?)
     :param size: image_size
-    :param min_scale:
-    :param max_scale:
-    :param max_aspect_ratio:
+    :param min_scale: maximum zoom rate
+    :param max_scale: minimum zoom rate
+    :param max_aspect_ratio: maximum aspect ratio, ie crop will be with ar: (1 / max_aspect_ratio, max_aspect_ratio)
     :param constraints: (min IOU with crop box, min IOU with original box)
     :param max_trial: num of trials
     :param target_shape: size of image to be resized to,
@@ -172,6 +174,7 @@ def random_downscale_with_constraints(image, boxes, min_scale=0.3, max_scale=1.,
     :param target_shape:
     :return:
     """
+
     h, w, c = image.shape
 
     h_target, w_target = target_shape

@@ -17,12 +17,12 @@ set_ll_kf(logging.INFO)
 set_nm_kf(__name__)
 
 
-from kungfutils.data_iterators.iterators.multiprocess_iterator import MultiProcessIterator
-from kungfutils.data_iterators.balancers.ohc_balancer import OHCBalancer
+from package.data_iterators.iterators.multiprocess_iterator import MultiProcessIterator
+from package.data_iterators.balancers.ohc_balancer import OHCBalancer
 
-from kungfutils.data_iterators.preprocessors.base_preprocessor import SlowZeroArrayReader
-from kungfutils.data_iterators.preprocessors.base_preprocessor import IdentityPreprocessor
-from kungfutils.routines.data_structure_routines import merge_dicts
+from package.data_iterators.preprocessors.base_preprocessor import SlowZeroArrayReader
+from package.data_iterators.preprocessors.base_preprocessor import IdentityPreprocessor
+from package.routines.data_structure_routines import merge_dicts
 
 if __name__ == '__main__':
 
