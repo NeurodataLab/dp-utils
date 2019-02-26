@@ -4,8 +4,8 @@ import pandas as pd
 
 import time
 
-from kungfutils import set_logger_level as set_ll_kf
-from kungfutils import set_logger_name as set_nm_kf
+from package import set_logger_level as set_ll_kf
+from package import set_logger_name as set_nm_kf
 
 root_logger = logging.getLogger(__name__)
 root_logger.setLevel(logging.INFO)
