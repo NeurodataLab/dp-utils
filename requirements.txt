@@ -1,0 +1,8 @@
+pandas
+networkx
+opencv_python
+numpy
+ffmpeg-python
+imgaug
+multiprocessing_logging
+mxnet
