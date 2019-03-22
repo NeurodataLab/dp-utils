@@ -4,7 +4,6 @@ import cv2
 from .iou import diag_iou, full_iou
 
 
-
 def rel_boxes_resize_square(boxes, old_shape):
     """
     Resize boxes in cases when image will be resized with preserving aspect ratio,
