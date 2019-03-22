@@ -1,4 +1,3 @@
-import mxnet as mx
 import numpy as np
 import logging
 from collections import defaultdict
@@ -11,7 +10,7 @@ logger.setLevel(ROOT_LOGGER_LEVEL)
 class BaseIterator(object):
     """By taking balancer, processors and data, iterates through data"""
     packers = {
-        'mxnet': mx.nd.array, 'numpy': np.array, 'list': (lambda x: x)
+        'numpy': np.array, 'list': (lambda x: x)
     }
 
     def __init__(self, balancer, data, preprocessors, packers=None,

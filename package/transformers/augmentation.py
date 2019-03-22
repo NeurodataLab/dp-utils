@@ -57,7 +57,7 @@ def get_fixed_augmenter(seed=42, *args, **kwargs):
     return seq
 
 
-def light_augmentation_func(for_list=False, deterministic=False):
+def get_light_augmentation_func(for_list=False, deterministic=False):
     seq = iaa.Sequential([
         iaa.Fliplr(0.5),
         iaa.Crop(percent=(0, 0.2), keep_size=True),
