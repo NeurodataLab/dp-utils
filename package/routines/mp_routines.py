@@ -1,4 +1,4 @@
-from multiprocessing import Queue, Array
+import multiprocessing as mp
 import numpy as np
 
 
@@ -18,16 +18,16 @@ class ArrayDictQueue(object):
         # make a pool of numpy arrays, each backed by shared memory,
         # and create a queue to keep track of which ones are free
         self.array_pool = {name: [None] * maxsize for name in self.template_names}
-        self.free_arrays = Queue(maxsize)
+        self.free_arrays = mp.Queue(maxsize)
         for array_id in range(maxsize):
             for name in self.template_names:
                 dtype, shape, byte_count = self.dtypes[name], self.shapes[name], self.byte_counts[name]
 
-                buf = Array('c', byte_count, lock=False)
+                buf = mp.Array('c', byte_count, lock=False)
                 self.array_pool[name][array_id] = np.frombuffer(buf, dtype=dtype).reshape(shape)
             self.free_arrays.put(array_id)
 
-        self.q = Queue(maxsize)
+        self.q = mp.Queue(maxsize)
 
     def put(self, items, *args, **kwargs):
         dict_to_put = {}
@@ -36,10 +36,10 @@ class ArrayDictQueue(object):
 
         for name, item in items.items():
             if type(item) is np.ndarray and name in self.template_names:
-                dtype, shape, byte_count = self.dtypes[name], self.shapes[name], self.byte_counts[name]
+                dt, shape, byte_count = self.dtypes[name], self.shapes[name], self.byte_counts[name]
 
                 item_size = item.size * item.itemsize
-                if item.dtype == dtype and item.shape == shape and item_size == byte_count:
+                if item.dtype == dt and item.shape == shape and item_size == byte_count:
                     # copy item to the shared-memory array
                     self.array_pool[name][free_id][:] = item
                     # put the array's free_id (not the whole array) onto the queue
