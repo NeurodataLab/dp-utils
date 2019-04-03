@@ -60,7 +60,6 @@ def get_fixed_augmenter(seed=42, *args, **kwargs):
 def get_contrast_augmentation_func(for_list=False, deterministic=False):
     seq = iaa.Sequential([
         iaa.Fliplr(0.5),
-        iaa.Sometimes(0.5, iaa.GaussianBlur(sigma=(0, 0.1))),
         iaa.Multiply((0.8, 1.2), per_channel=0.2),
         iaa.AdditiveGaussianNoise(loc=0, scale=(0.0, 0.01 * 255), per_channel=0.5),
     ], random_order=True)
