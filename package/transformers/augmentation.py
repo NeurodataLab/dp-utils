@@ -66,7 +66,8 @@ def get_light_augmentation_func(for_list=False, deterministic=False):
         iaa.Affine(
             translate_percent={"x": (-0.05, 0.05), "y": (-0.05, 0.05)},
             rotate=(-15, 15)
-        )
+        ),
+        iaa.AdditiveGaussianNoise(loc=0, scale=(0.0, 0.02 * 255), per_channel=0.5),
     ], random_order=True)
     if deterministic:
         seq = seq.to_deterministic()
