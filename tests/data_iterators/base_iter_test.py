@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 
 from package.data_iterators.iterators.base_iterator import BaseIterator
-from package.data_iterators.balancers.ohc_balancer import OHCBalancer
+from package.data_iterators.samplers.ohc_balancer import OHCBalancer
 
 from package.data_iterators.preprocessors.base_preprocessor import ZeroArrayReader
 from package.data_iterators.preprocessors.base_preprocessor import IdentityPreprocessor

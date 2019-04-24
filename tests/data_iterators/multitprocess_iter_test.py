@@ -18,7 +18,7 @@ set_nm_kf(__name__)
 
 
 from package.data_iterators.iterators.multiprocess_iterator import MultiProcessIterator
-from package.data_iterators.balancers.ohc_balancer import OHCBalancer
+from package.data_iterators.samplers.ohc_balancer import OHCBalancer
 
 from package.data_iterators.preprocessors.base_preprocessor import SlowZeroArrayReader
 from package.data_iterators.preprocessors.base_preprocessor import IdentityPreprocessor

@@ -18,14 +18,14 @@ def resize_frames(video_arr, target_size, keep_aspect_ratio=False):
 
     for im in video_arr:
         if keep_aspect_ratio:
-            im_tmp = resize_image_keep_aspect(im, target_size=target_size)
+            im_tmp = resize_frame_keep_aspect(im, target_size=target_size)
             ret_list.append(im_tmp)
         else:
             ret_list.append(cv2.resize(im, target_size))
     return np.array(ret_list)
 
 
-def resize_image_keep_aspect(img, target_size=(500, 500)):
+def resize_frame_keep_aspect(img, target_size=(500, 500)):
     """
     :param img:
     :param target_size: in h,w format
